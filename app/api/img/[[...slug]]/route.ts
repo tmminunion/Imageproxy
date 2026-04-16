@@ -1,13 +1,17 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/libs/db';
 import * as sharpModule from 'sharp';
 
-export async function GET(request, { params }) {
+export async function GET(
+  request: NextRequest, 
+  { params }: { params: Promise<{ slug: string[] }> }
+) {
   try {
     const { slug } = await params;
-    let width = null, height = null, filename = "";
+    let width: number | null = null;
+    let height: number | null = null;
+    let filename = "";
 
-    // 1. Parsing URL (thumbnail/500/500/id.jpg)
     if (slug && slug.length >= 4) {
       width = parseInt(slug[1]);
       height = parseInt(slug[2]);
@@ -18,40 +22,36 @@ export async function GET(request, { params }) {
 
     const id = filename.split('.')[0];
 
-    // 2. Ambil dari MySQL
-    const [rows] = await db.query('SELECT image FROM images WHERE id = ?', [id]);
-    if (!rows || rows.length === 0) return new NextResponse('Not Found', { status: 404 });
+    const [rows]: any = await db.query('SELECT image FROM images WHERE id = ?', [id]);
+    
+    if (!rows || rows.length === 0) {
+      return new NextResponse('Not Found', { status: 404 });
+    }
 
     const { image } = rows[0];
     const base64Clean = image.replace(/^data:image\/\w+;base64,/, "");
     let imageBuffer = Buffer.from(base64Clean, 'base64');
 
-    // 3. Proses Resize dengan Proteksi
     if (width && height && !isNaN(width) && !isNaN(height)) {
       try {
-        // Cara akses fungsi sharp yang paling aman
-        const sharp = sharpModule.default || sharpModule;
-        
+        const sharp: any = sharpModule.default || sharpModule;
         imageBuffer = await sharp(imageBuffer)
           .resize(width, height, { fit: 'cover' })
           .jpeg({ quality: 80 })
           .toBuffer();
-          
-      } catch (sharpError) {
-        console.error("Gagal resize, mengirim gambar asli:", sharpError.message);
-        // Jika sharp gagal, biarkan imageBuffer tetap berisi gambar asli
+      } catch (sharpError: any) {
+        console.error("Gagal resize:", sharpError.message);
       }
     }
 
-    // 4. Kirim Response
     return new NextResponse(imageBuffer, {
       headers: {
         'Content-Type': 'image/jpeg',
-        'Cache-Control': 'no-store, must-revalidate', // Matikan cache saat debug
+        'Cache-Control': 'public, max-age=31536000, immutable',
       },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("API Error:", error.message);
     return new NextResponse('Internal Error', { status: 500 });
   }

@@ -51,8 +51,9 @@ function GET(request, _a) {
                     return [4 /*yield*/, params];
                 case 1:
                     slug = (_b.sent()).slug;
-                    width = null, height = null, filename = "";
-                    // 1. Parsing URL (thumbnail/500/500/id.jpg)
+                    width = null;
+                    height = null;
+                    filename = "";
                     if (slug && slug.length >= 4) {
                         width = parseInt(slug[1]);
                         height = parseInt(slug[2]);
@@ -65,8 +66,9 @@ function GET(request, _a) {
                     return [4 /*yield*/, db_1.db.query('SELECT image FROM images WHERE id = ?', [id])];
                 case 2:
                     rows = (_b.sent())[0];
-                    if (!rows || rows.length === 0)
+                    if (!rows || rows.length === 0) {
                         return [2 /*return*/, new server_1.NextResponse('Not Found', { status: 404 })];
+                    }
                     image = rows[0].image;
                     base64Clean = image.replace(/^data:image\/\w+;base64,/, "");
                     imageBuffer = Buffer.from(base64Clean, 'base64');
@@ -84,14 +86,12 @@ function GET(request, _a) {
                     return [3 /*break*/, 6];
                 case 5:
                     sharpError_1 = _b.sent();
-                    console.error("Gagal resize, mengirim gambar asli:", sharpError_1.message);
+                    console.error("Gagal resize:", sharpError_1.message);
                     return [3 /*break*/, 6];
-                case 6: 
-                // 4. Kirim Response
-                return [2 /*return*/, new server_1.NextResponse(imageBuffer, {
+                case 6: return [2 /*return*/, new server_1.NextResponse(imageBuffer, {
                         headers: {
                             'Content-Type': 'image/jpeg',
-                            'Cache-Control': 'no-store, must-revalidate', // Matikan cache saat debug
+                            'Cache-Control': 'public, max-age=31536000, immutable',
                         },
                     })];
                 case 7:
