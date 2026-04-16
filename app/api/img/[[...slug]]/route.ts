@@ -3,25 +3,31 @@ import { db } from '@/libs/db';
 import * as sharpModule from 'sharp';
 
 export async function GET(
-  request: NextRequest, 
-  { params }: { params: Promise<{ slug: string[] }> }
+  request: NextRequest,
+  { params }: { params: Promise<{ slug?: string[] }> } // Tambahkan tanda tanya (?) di slug
 ) {
   try {
-    const { slug } = await params;
+    const resolvedParams = await params;
+    const slug = resolvedParams.slug; // slug bisa undefined jika akses ke /api/img/
+
     let width: number | null = null;
     let height: number | null = null;
     let filename = "";
 
+    // 1. Logika Parsing dengan pengecekan apakah slug ada
     if (slug && slug.length >= 4) {
       width = parseInt(slug[1]);
       height = parseInt(slug[2]);
       filename = slug[3];
-    } else if (slug) {
+    } else if (slug && slug.length > 0) {
       filename = slug[0];
+    } else {
+      return new NextResponse('Filename missing', { status: 400 });
     }
 
     const id = filename.split('.')[0];
 
+    // 2. Ambil dari MySQL
     const [rows]: any = await db.query('SELECT image FROM images WHERE id = ?', [id]);
     
     if (!rows || rows.length === 0) {
@@ -32,6 +38,7 @@ export async function GET(
     const base64Clean = image.replace(/^data:image\/\w+;base64,/, "");
     let imageBuffer = Buffer.from(base64Clean, 'base64');
 
+    // 3. Proses Resize
     if (width && height && !isNaN(width) && !isNaN(height)) {
       try {
         const sharp: any = sharpModule.default || sharpModule;
@@ -40,7 +47,7 @@ export async function GET(
           .jpeg({ quality: 80 })
           .toBuffer();
       } catch (sharpError: any) {
-        console.error("Gagal resize:", sharpError.message);
+        console.error("Sharp Error:", sharpError.message);
       }
     }
 

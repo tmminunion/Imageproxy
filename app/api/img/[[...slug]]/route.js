@@ -40,27 +40,33 @@ exports.GET = void 0;
 var server_1 = require("next/server");
 var db_1 = require("@/libs/db");
 var sharpModule = require("sharp");
-function GET(request, _a) {
+function GET(request, _a // Tambahkan tanda tanya (?) di slug
+) {
     var params = _a.params;
     return __awaiter(this, void 0, void 0, function () {
-        var slug, width, height, filename, id, rows, image, base64Clean, imageBuffer, sharp, sharpError_1, error_1;
+        var resolvedParams, slug, width, height, filename, id, rows, image, base64Clean, imageBuffer, sharp, sharpError_1, error_1;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
                     _b.trys.push([0, 7, , 8]);
                     return [4 /*yield*/, params];
                 case 1:
-                    slug = (_b.sent()).slug;
+                    resolvedParams = _b.sent();
+                    slug = resolvedParams.slug;
                     width = null;
                     height = null;
                     filename = "";
+                    // 1. Logika Parsing dengan pengecekan apakah slug ada
                     if (slug && slug.length >= 4) {
                         width = parseInt(slug[1]);
                         height = parseInt(slug[2]);
                         filename = slug[3];
                     }
-                    else if (slug) {
+                    else if (slug && slug.length > 0) {
                         filename = slug[0];
+                    }
+                    else {
+                        return [2 /*return*/, new server_1.NextResponse('Filename missing', { status: 400 })];
                     }
                     id = filename.split('.')[0];
                     return [4 /*yield*/, db_1.db.query('SELECT image FROM images WHERE id = ?', [id])];
@@ -86,7 +92,7 @@ function GET(request, _a) {
                     return [3 /*break*/, 6];
                 case 5:
                     sharpError_1 = _b.sent();
-                    console.error("Gagal resize:", sharpError_1.message);
+                    console.error("Sharp Error:", sharpError_1.message);
                     return [3 /*break*/, 6];
                 case 6: return [2 /*return*/, new server_1.NextResponse(imageBuffer, {
                         headers: {
