@@ -55,27 +55,20 @@ function GET(request, _a) {
                 case 2:
                     rows = (_b.sent())[0];
                     if (!rows || rows.length === 0) {
-                        return [2 /*return*/, new server_1.NextResponse('Gambar tidak ditemukan', { status: 404 })];
+                        return [2 /*return*/, new server_1.NextResponse('Not Found', { status: 404 })];
                     }
                     image = rows[0].image;
-                    if (!image) {
-                        return [2 /*return*/, new server_1.NextResponse('Data image kosong', { status: 500 })];
-                    }
                     base64Clean = image.replace(/^data:image\/\w+;base64,/, "");
                     imageBuffer = Buffer.from(base64Clean, 'base64');
-                    // 3. Kirim Response
                     return [2 /*return*/, new server_1.NextResponse(imageBuffer, {
                             headers: {
-                                // Karena kamu hanya ambil kolom 'image', kita default ke image/jpeg
-                                // atau kamu bisa tambah kolom 'mime' di query SQL jika ada
                                 'Content-Type': 'image/jpeg',
                                 'Cache-Control': 'public, max-age=31536000, immutable',
                             },
                         })];
                 case 3:
                     error_1 = _b.sent();
-                    console.error("Database Error:", error_1.message);
-                    return [2 /*return*/, new server_1.NextResponse('Internal Server Error: ' + error_1.message, { status: 500 })];
+                    return [2 /*return*/, new server_1.NextResponse('Error: ' + error_1.message, { status: 500 })];
                 case 4: return [2 /*return*/];
             }
         });

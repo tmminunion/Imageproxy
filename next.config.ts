@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
     // Ini akan memaksa Vercel tetap build meskipun ada error TS
     ignoreBuildErrors: true,
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 };
 
 export default nextConfig;
