@@ -38,43 +38,44 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GET = void 0;
 var server_1 = require("next/server");
-var axios_1 = require("axios");
-function GET(request) {
+var db_1 = require("@/libs/db");
+function GET(request, _a) {
+    var params = _a.params;
     return __awaiter(this, void 0, void 0, function () {
-        var searchParams, imageUrl, response, contentType, base64String, error_1;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var rawId, id, rows, image, base64Clean, imageBuffer, error_1;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
-                    searchParams = new URL(request.url).searchParams;
-                    imageUrl = searchParams.get('url');
-                    if (!imageUrl) {
-                        return [2 /*return*/, server_1.NextResponse.json({ error: 'Sertakan parameter ?url=' }, { status: 400 })];
-                    }
-                    _a.label = 1;
+                    _b.trys.push([0, 3, , 4]);
+                    return [4 /*yield*/, params];
                 case 1:
-                    _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, axios_1.default.get(imageUrl, {
-                            responseType: 'arraybuffer',
-                            timeout: 7000,
-                            headers: {
-                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-                            }
-                        })];
+                    rawId = (_b.sent()).id;
+                    id = rawId.split('.')[0];
+                    return [4 /*yield*/, db_1.db.query('SELECT image FROM images WHERE id = ?', [id])];
                 case 2:
-                    response = _a.sent();
-                    contentType = response.headers['content-type'];
-                    base64String = Buffer.from(response.data).toString('base64');
-                    return [2 /*return*/, server_1.NextResponse.json({
-                            success: true,
-                            base64: "data:".concat(contentType, ";base64,").concat(base64String)
+                    rows = (_b.sent())[0];
+                    if (!rows || rows.length === 0) {
+                        return [2 /*return*/, new server_1.NextResponse('Gambar tidak ditemukan', { status: 404 })];
+                    }
+                    image = rows[0].image;
+                    if (!image) {
+                        return [2 /*return*/, new server_1.NextResponse('Data image kosong', { status: 500 })];
+                    }
+                    base64Clean = image.replace(/^data:image\/\w+;base64,/, "");
+                    imageBuffer = Buffer.from(base64Clean, 'base64');
+                    // 3. Kirim Response
+                    return [2 /*return*/, new server_1.NextResponse(imageBuffer, {
+                            headers: {
+                                // Karena kamu hanya ambil kolom 'image', kita default ke image/jpeg
+                                // atau kamu bisa tambah kolom 'mime' di query SQL jika ada
+                                'Content-Type': 'image/jpeg',
+                                'Cache-Control': 'public, max-age=31536000, immutable',
+                            },
                         })];
                 case 3:
-                    error_1 = _a.sent();
-                    console.error('Proxy Error:', error_1.message);
-                    return [2 /*return*/, server_1.NextResponse.json({
-                            success: false,
-                            error: 'Gagal mengambil gambar. Pastikan URL benar.'
-                        }, { status: 500 })];
+                    error_1 = _b.sent();
+                    console.error("Database Error:", error_1.message);
+                    return [2 /*return*/, new server_1.NextResponse('Internal Server Error: ' + error_1.message, { status: 500 })];
                 case 4: return [2 /*return*/];
             }
         });

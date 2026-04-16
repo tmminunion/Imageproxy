@@ -35,76 +35,103 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GET = void 0;
+exports.POST = void 0;
 var server_1 = require("next/server");
-var axios_1 = require("axios");
+var firebase_admin_1 = require("firebase-admin");
 var jose_1 = require("jose");
-// Persiapkan Secret Key (Pastikan ini ada di Environment Variables Vercel)
-var JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'rahasia_dapur_123');
-function GET(request) {
+// 1. Inisialisasi Firebase Admin (Singleton)
+if (!firebase_admin_1.default.apps.length) {
+    try {
+        firebase_admin_1.default.initializeApp({
+            credential: firebase_admin_1.default.credential.cert({
+                projectId: process.env.FIREBASE_PROJECT_ID,
+                clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                // Menangani karakter newline pada private key dari environment variable
+                privateKey: (_a = process.env.FIREBASE_PRIVATE_KEY) === null || _a === void 0 ? void 0 : _a.replace(/\\n/g, '\n'),
+            }),
+        });
+    }
+    catch (error) {
+        console.error('Firebase initialization error', error.stack);
+    }
+}
+// Persiapkan Secret Key untuk JWT
+var JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
+function POST(request) {
     return __awaiter(this, void 0, void 0, function () {
-        var authHeader, token, err_1, searchParams, imageUrl, decodedUrl, response, contentType, base64String, error_1;
+        var authHeader, token, err_1, body, topic, title, message, data, payload, response, error_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    _a.trys.push([0, 6, , 7]);
+                    _a.trys.push([0, 7, , 8]);
                     authHeader = request.headers.get('authorization');
                     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                        return [2 /*return*/, server_1.NextResponse.json({ error: 'Unauthorized: Missing Token' }, { status: 401 })];
+                        return [2 /*return*/, server_1.NextResponse.json({ error: 'Missing or invalid Authorization header' }, { status: 401 })];
                     }
                     token = authHeader.split(' ')[1];
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
-                    // Verifikasi JWT
+                    // Validasi token
                     return [4 /*yield*/, (0, jose_1.jwtVerify)(token, JWT_SECRET)];
                 case 2:
-                    // Verifikasi JWT
+                    // Validasi token
                     _a.sent();
                     return [3 /*break*/, 4];
                 case 3:
                     err_1 = _a.sent();
-                    return [2 /*return*/, server_1.NextResponse.json({ error: 'Unauthorized: Invalid or Expired Token' }, { status: 401 })];
-                case 4:
-                    searchParams = new URL(request.url).searchParams;
-                    imageUrl = searchParams.get('url');
-                    if (!imageUrl) {
-                        return [2 /*return*/, server_1.NextResponse.json({ error: 'Missing URL parameter' }, { status: 400 })];
-                    }
-                    decodedUrl = decodeURIComponent(imageUrl);
-                    return [4 /*yield*/, axios_1.default.get(decodedUrl, {
-                            responseType: 'arraybuffer',
-                            timeout: 10000,
-                            headers: {
-                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-                            }
-                        })];
+                    return [2 /*return*/, server_1.NextResponse.json({ error: 'Unauthorized: Invalid Token' }, { status: 401 })];
+                case 4: return [4 /*yield*/, request.json()];
                 case 5:
+                    body = _a.sent();
+                    topic = body.topic, title = body.title, message = body.message, data = body.data;
+                    // Validasi input minimal
+                    if (!topic || !title || !message) {
+                        return [2 /*return*/, server_1.NextResponse.json({ error: 'Field topic, title, and message are required' }, { status: 400 })];
+                    }
+                    payload = {
+                        topic: topic,
+                        notification: {
+                            title: title,
+                            body: message,
+                        },
+                        // Data payload tambahan untuk ditangkap di background (Ionic)
+                        data: data || {},
+                        android: {
+                            priority: 'high',
+                            notification: {
+                                sound: 'default',
+                                clickAction: 'FCM_PLUGIN_ACTIVITY', // Penting untuk beberapa plugin Capacitor
+                            },
+                        },
+                        apns: {
+                            payload: {
+                                aps: {
+                                    sound: 'default',
+                                },
+                            },
+                        },
+                    };
+                    return [4 /*yield*/, firebase_admin_1.default.messaging().send(payload)];
+                case 6:
                     response = _a.sent();
-                    contentType = response.headers['content-type'] || 'image/jpeg';
-                    base64String = Buffer.from(response.data).toString('base64');
                     return [2 /*return*/, server_1.NextResponse.json({
                             success: true,
-                            base64: "data:".concat(contentType, ";base64,").concat(base64String)
-                        }, {
-                            headers: {
-                                'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=43200',
-                                'Access-Control-Allow-Origin': '*',
-                                'Access-Control-Allow-Methods': 'GET, OPTIONS',
-                                'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-                            }
+                            message: "Successfully sent to topic: ".concat(topic),
+                            messageId: response
                         })];
-                case 6:
+                case 7:
                     error_1 = _a.sent();
-                    console.error("Error Detail:", error_1.message);
+                    console.error('FCM Error:', error_1);
                     return [2 /*return*/, server_1.NextResponse.json({
-                            error: 'Fetch failed',
-                            details: error_1.message
+                            success: false,
+                            error: error_1.message
                         }, { status: 500 })];
-                case 7: return [2 /*return*/];
+                case 8: return [2 /*return*/];
             }
         });
     });
 }
-exports.GET = GET;
+exports.POST = POST;
