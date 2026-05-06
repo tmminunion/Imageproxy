@@ -1,29 +1,9 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
-import { jwtVerify } from 'jose';
-
-// Persiapkan Secret Key (Pastikan ini ada di Environment Variables Vercel)
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'rahasia_dapur_123');
 
 export async function GET(request: Request) {
   try {
-    // --- 1. VALIDASI BEARER TOKEN ---
-    const authHeader = request.headers.get('authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized: Missing Token' }, { status: 401 });
-    }
-
-    const token = authHeader.split(' ')[1];
-
-    try {
-      // Verifikasi JWT
-      await jwtVerify(token, JWT_SECRET);
-    } catch (err) {
-      return NextResponse.json({ error: 'Unauthorized: Invalid or Expired Token' }, { status: 401 });
-    }
-
-    // --- 2. PROSES IMAGE PROXY (LOGIKA LAMA ANDA) ---
+    // --- PROSES IMAGE PROXY ---
     const { searchParams } = new URL(request.url);
     const imageUrl = searchParams.get('url');
 

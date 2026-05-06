@@ -48,25 +48,7 @@ function GET(request) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    _a.trys.push([0, 6, , 7]);
-                    authHeader = request.headers.get('authorization');
-                    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                        return [2 /*return*/, server_1.NextResponse.json({ error: 'Unauthorized: Missing Token' }, { status: 401 })];
-                    }
-                    token = authHeader.split(' ')[1];
-                    _a.label = 1;
-                case 1:
-                    _a.trys.push([1, 3, , 4]);
-                    // Verifikasi JWT
-                    return [4 /*yield*/, (0, jose_1.jwtVerify)(token, JWT_SECRET)];
-                case 2:
-                    // Verifikasi JWT
-                    _a.sent();
-                    return [3 /*break*/, 4];
-                case 3:
-                    err_1 = _a.sent();
-                    return [2 /*return*/, server_1.NextResponse.json({ error: 'Unauthorized: Invalid or Expired Token' }, { status: 401 })];
-                case 4:
+                    _a.trys.push([0, 2, , 3]);
                     searchParams = new URL(request.url).searchParams;
                     imageUrl = searchParams.get('url');
                     if (!imageUrl) {
@@ -80,7 +62,7 @@ function GET(request) {
                                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
                             }
                         })];
-                case 5:
+                case 1:
                     response = _a.sent();
                     contentType = response.headers['content-type'] || 'image/jpeg';
                     base64String = Buffer.from(response.data).toString('base64');
@@ -95,14 +77,14 @@ function GET(request) {
                                 'Access-Control-Allow-Headers': 'Content-Type, Authorization',
                             }
                         })];
-                case 6:
+                case 2:
                     error_1 = _a.sent();
                     console.error("Error Detail:", error_1.message);
                     return [2 /*return*/, server_1.NextResponse.json({
                             error: 'Fetch failed',
                             details: error_1.message
                         }, { status: 500 })];
-                case 7: return [2 /*return*/];
+                case 3: return [2 /*return*/];
             }
         });
     });
