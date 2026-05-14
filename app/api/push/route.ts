@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import admin from 'firebase-admin';
-import { jwtVerify } from 'jose';
 
 // 1. Inisialisasi Firebase Admin (Singleton)
 if (!admin.apps.length) {
@@ -18,28 +17,9 @@ if (!admin.apps.length) {
   }
 }
 
-// Persiapkan Secret Key untuk JWT
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
-
 export async function POST(request: Request) {
   try {
-    // --- STEP 1: VERIFIKASI AUTH BEARER JWT ---
-    const authHeader = request.headers.get('authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Missing or invalid Authorization header' }, { status: 401 });
-    }
-
-    const token = authHeader.split(' ')[1];
-
-    try {
-      // Validasi token
-      await jwtVerify(token, JWT_SECRET);
-    } catch (err) {
-      return NextResponse.json({ error: 'Unauthorized: Invalid Token' }, { status: 401 });
-    }
-
-    // --- STEP 2: PARSING BODY ---
+    // --- STEP 1: PARSING BODY ---
     const body = await request.json();
     const { topic, title, message, data } = body;
 
@@ -48,7 +28,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Field topic, title, and message are required' }, { status: 400 });
     }
 
-    // --- STEP 3: PENGIRIMAN KE FCM TOPIC ---
+    // --- STEP 2: PENGIRIMAN KE FCM TOPIC ---
     const payload = {
       topic: topic,
       notification: {
