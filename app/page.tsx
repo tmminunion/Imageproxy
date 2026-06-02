@@ -11,7 +11,7 @@ export default function AdminDashboard() {
   const fetchStats = async () => {
     try {
       setServerStatus('Checking...');
-      console.log('📡 [Supabase Ping] Connecting to:', supabase.supabaseUrl);
+      console.log('📡 [Supabase Ping] Connecting to Supabase...');
       
       const { count, error } = await supabase
         .from('images')
