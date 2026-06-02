@@ -1,0 +1,19 @@
+
+> image-proxy-backend@0.1.0 dev:local
+> next dev --webpack --port 3030
+
+▲ Next.js 16.2.4 (webpack)
+- Local:         http://localhost:3030
+- Network:       http://10.8.0.3:3030
+- Environments: .env
+✓ Ready in 3.1s
+⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /data/data/com.termux/files/home/package-lock.json as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * /data/data/com.termux/files/home/image-proxy-backend/package-lock.json
+
+  Skipping creating a lockfile at /data/data/com.termux/files/home/image-proxy-backend/.next/dev/lock because we're using WASM bindings
+
+[?25h

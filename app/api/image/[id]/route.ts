@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { db } from '@/libs/db';
+import { supabase } from '@/libs/supabase';
 
 export async function GET(
   request: NextRequest, 
@@ -11,17 +11,19 @@ export async function GET(
     // Bersihkan ID dari ekstensi .jpg jika ada
     const id = rawId.split('.')[0];
 
-    // Ambil data dari MySQL
-    const [rows]: any = await db.query(
-      'SELECT image FROM images WHERE id = ?', 
-      [id]
-    );
+    // Ambil data dari Supabase
+    const { data, error } = await supabase
+      .from('images')
+      .select('image')
+      .eq('id', id)
+      .single();
 
-    if (!rows || rows.length === 0) {
+    if (error || !data) {
+      console.error('Supabase error:', error);
       return new NextResponse('Not Found', { status: 404 });
     }
 
-    const { image } = rows[0];
+    const { image } = data;
     const base64Clean = image.replace(/^data:image\/\w+;base64,/, "");
     const imageBuffer = Buffer.from(base64Clean, 'base64');
 
@@ -29,6 +31,7 @@ export async function GET(
       headers: {
         'Content-Type': 'image/jpeg',
         'Cache-Control': 'public, max-age=31536000, immutable',
+        'Access-Control-Allow-Origin': '*',
       },
     });
 

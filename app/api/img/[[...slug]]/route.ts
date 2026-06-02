@@ -1,20 +1,19 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { db } from '@/libs/db';
+import { supabase } from '@/libs/supabase';
 import * as sharpModule from 'sharp';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ slug?: string[] }> } // Tambahkan tanda tanya (?) di slug
+  { params }: { params: Promise<{ slug?: string[] }> }
 ) {
   try {
     const resolvedParams = await params;
-    const slug = resolvedParams.slug; // slug bisa undefined jika akses ke /api/img/
+    const slug = resolvedParams.slug;
 
     let width: number | null = null;
     let height: number | null = null;
     let filename = "";
 
-    // 1. Logika Parsing dengan pengecekan apakah slug ada
     if (slug && slug.length >= 4) {
       width = parseInt(slug[1]);
       height = parseInt(slug[2]);
@@ -27,18 +26,22 @@ export async function GET(
 
     const id = filename.split('.')[0];
 
-    // 2. Ambil dari MySQL
-    const [rows]: any = await db.query('SELECT image FROM images WHERE id = ?', [id]);
+    // Ambil data dari Supabase
+    const { data, error } = await supabase
+      .from('images')
+      .select('image')
+      .eq('id', id)
+      .single();
     
-    if (!rows || rows.length === 0) {
+    if (error || !data) {
       return new NextResponse('Not Found', { status: 404 });
     }
 
-    const { image } = rows[0];
+    const { image } = data;
     const base64Clean = image.replace(/^data:image\/\w+;base64,/, "");
     let imageBuffer = Buffer.from(base64Clean, 'base64');
 
-    // 3. Proses Resize
+    // Proses Resize
     if (width && height && !isNaN(width) && !isNaN(height)) {
       try {
         const sharp: any = sharpModule.default || sharpModule;
@@ -55,6 +58,7 @@ export async function GET(
       headers: {
         'Content-Type': 'image/jpeg',
         'Cache-Control': 'public, max-age=31536000, immutable',
+        'Access-Control-Allow-Origin': '*',
       },
     });
 
