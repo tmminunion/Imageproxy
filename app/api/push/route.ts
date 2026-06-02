@@ -4,14 +4,18 @@ import admin from 'firebase-admin';
 // 1. Inisialisasi Firebase Admin (Singleton)
 if (!admin.apps.length) {
   try {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        // Menangani karakter newline pada private key dari environment variable
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      }),
-    });
+    if (process.env.FIREBASE_PRIVATE_KEY) {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          // Menangani karakter newline pada private key dari environment variable
+          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        }),
+      });
+    } else {
+      console.warn('⚠️ Firebase Admin: FIREBASE_PRIVATE_KEY is missing, initialization skipped.');
+    }
   } catch (error: any) {
     console.error('Firebase initialization error', error.stack);
   }
