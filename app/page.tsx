@@ -20,7 +20,14 @@ interface DriveFile {
   thumbnail: string;
 }
 
-type TabType = 'svg-editor' | 'svg-gallery' | 'drive' | 'remove-bg';
+interface AppwriteFile {
+  id: string;
+  name: string;
+  src: string;
+  category: string;
+}
+
+type TabType = 'svg-editor' | 'svg-gallery' | 'drive' | 'remove-bg' | 'appwrite';
 
 export default function UnifiedDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('svg-editor');
@@ -48,6 +55,10 @@ export default function UnifiedDashboard() {
   const [driveUploading, setDriveUploading] = useState(false);
   const [driveError, setDriveError] = useState('');
 
+  // --- APPWRITE STATES ---
+  const [appwriteFiles, setAppwriteFiles] = useState<AppwriteFile[]>([]);
+  const [appwriteLoading, setAppwriteLoading] = useState(false);
+
   // --- REMOVE BG STATES ---
   const [rbgImage, setRbgImage] = useState<File | null>(null);
   const [rbgPreview, setRbgPreview] = useState<string | null>(null);
@@ -58,6 +69,7 @@ export default function UnifiedDashboard() {
   useEffect(() => {
     if (activeTab === 'svg-gallery') fetchSvgs();
     if (activeTab === 'drive') fetchDriveFiles();
+    if (activeTab === 'appwrite') fetchAppwriteFiles();
   }, [activeTab]);
 
   // --- SVG LOGIC ---
@@ -132,6 +144,22 @@ export default function UnifiedDashboard() {
     }
   };
 
+  // --- APPWRITE LOGIC ---
+  const fetchAppwriteFiles = async () => {
+    try {
+      setAppwriteLoading(true);
+      const res = await fetch('/api/bingkai');
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setAppwriteFiles(data);
+      }
+    } catch (err: any) {
+      console.error('Fetch Appwrite error:', err.message);
+    } finally {
+      setAppwriteLoading(false);
+    }
+  };
+
   const handleDriveUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -193,6 +221,7 @@ export default function UnifiedDashboard() {
     if (name === 'gallery') return <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>;
     if (name === 'drive') return <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>;
     if (name === 'magic') return <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>;
+    if (name === 'bingkai') return <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M3 9h18"></path><path d="M9 21V9"></path></svg>;
     return null;
   };
 
@@ -223,6 +252,7 @@ export default function UnifiedDashboard() {
               { id: 'svg-editor', label: 'SVG Editor', icon: 'editor' },
               { id: 'svg-gallery', label: 'SVG Gallery', icon: 'gallery' },
               { id: 'drive', label: 'Cloud Drive', icon: 'drive' },
+              { id: 'appwrite', label: 'Appwrite Frames', icon: 'bingkai' },
               { id: 'remove-bg', label: 'Magic Remove', icon: 'magic' },
             ].map((tab) => (
               <button
@@ -432,7 +462,57 @@ export default function UnifiedDashboard() {
               </div>
             )}
 
-            {/* 4. MAGIC REMOVE BG */}
+            {/* 4. APPWRITE FRAMES */}
+            {activeTab === 'appwrite' && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+                <header>
+                  <h2 className="text-3xl font-black tracking-tight">Appwrite Frames 🖼️</h2>
+                  <p className="text-slate-400 text-sm mt-1 font-medium">Koleksi bingkai foto dari Appwrite Storage.</p>
+                </header>
+
+                {appwriteLoading ? (
+                   <div className="flex flex-col items-center justify-center p-32 bg-white/5 rounded-[3rem] border border-white/10">
+                     <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-4"></div>
+                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Mencari Bingkai...</p>
+                   </div>
+                ) : appwriteFiles.length === 0 ? (
+                  <div className="bg-white/5 p-24 rounded-[3rem] border border-dashed border-white/10 text-center text-slate-600">
+                    <p className="text-lg font-bold">Bingkai tidak ditemukan.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {appwriteFiles.map((file) => (
+                      <div key={file.id} className="group bg-white/5 rounded-[2.5rem] border border-white/5 overflow-hidden hover:border-purple-500/50 hover:bg-white/10 transition-all duration-500 shadow-xl">
+                        <div className="aspect-square bg-slate-950/30 flex items-center justify-center p-6 relative overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-repeat">
+                           <img 
+                             src={file.src} 
+                             alt={file.name} 
+                             className="w-full h-full object-contain drop-shadow-2xl group-hover:scale-110 transition-transform duration-500" 
+                           />
+                        </div>
+                        <div className="p-6 border-t border-white/5 flex flex-col space-y-2">
+                          <h3 className="font-black text-sm truncate">{file.name}</h3>
+                          <div className="flex justify-between items-center">
+                            <span className="text-[9px] font-black text-purple-400 uppercase bg-purple-400/10 px-3 py-1.5 rounded-lg">Appwrite Bucket</span>
+                            <button 
+                              onClick={() => {
+                                navigator.clipboard.writeText(`${window.location.origin}${file.src}`);
+                                alert('Link bingkai disalin! ❤️');
+                              }}
+                              className="p-2.5 bg-white/5 rounded-xl hover:bg-purple-600/20 hover:text-purple-400 transition-colors"
+                            >
+                              <Icon name="magic" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 5. MAGIC REMOVE BG */}
             {activeTab === 'remove-bg' && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                 <header>
