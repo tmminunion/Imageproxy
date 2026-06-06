@@ -21,7 +21,7 @@ export async function GET() {
       name: file.name,
       mimeType: file.mimeType,
       size: file.size,
-      src: `/api/drive/${file.id}`,
+      src: `https://dev.bungtemin.net/api/drive/${file.id}`,
       thumbnail: file.thumbnailLink
     }));
 
