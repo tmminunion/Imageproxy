@@ -191,9 +191,17 @@ export default function SvgGallery() {
             </h1>
             <p className="text-slate-400 mt-2 font-medium">Digital Art Gallery & Editor for Aa Baim</p>
           </div>
-          <div className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-6 py-2.5 rounded-2xl text-sm font-bold flex items-center gap-3 backdrop-blur-md">
-            <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_10px_rgba(99,102,241,0.8)]"></span>
-            Cloud Sync Active
+          <div className="flex flex-wrap items-center gap-4">
+            <a 
+              href="/remove-bg" 
+              className="bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 px-6 py-2.5 rounded-2xl text-sm font-bold flex items-center gap-2 backdrop-blur-md transition-all"
+            >
+              ✨ Remove BG
+            </a>
+            <div className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-6 py-2.5 rounded-2xl text-sm font-bold flex items-center gap-3 backdrop-blur-md">
+              <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_10px_rgba(99,102,241,0.8)]"></span>
+              Cloud Sync Active
+            </div>
           </div>
         </header>
 

@@ -13,11 +13,11 @@ export async function getDriveClient() {
   try {
     let credentials;
 
-    // Prioritas 1: Ambil dari Environment Variable (Rekomendasi untuk Vercel/Cloud)
+    // Prioritas 1: Ambil dari Environment Variable
     if (process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
       try {
         credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
-        console.log('Google Drive: Menggunakan kredensial dari environment variable.');
+        console.log('Google Drive: Mencoba menggunakan kredensial dari environment variable.');
       } catch (e: any) {
         console.error('Error parsing GOOGLE_SERVICE_ACCOUNT_JSON:', e.message);
       }
@@ -25,12 +25,22 @@ export async function getDriveClient() {
 
     // Prioritas 2: Fallback ke file path (Lokal)
     if (!credentials && fs.existsSync(CREDENTIALS_PATH)) {
-      credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf8'));
-      console.log('Google Drive: Menggunakan kredensial dari file lokal.');
+      try {
+        credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf8'));
+        console.log('Google Drive: Mencoba menggunakan kredensial dari file lokal.');
+      } catch (e: any) {
+        console.error('Error reading credentials file:', e.message);
+      }
     }
 
     if (!credentials) {
       throw new Error('Kredensial Google Service Account tidak ditemukan di .env maupun file lokal.');
+    }
+
+    // FIX: Pastikan private_key memiliki format newline yang benar (\n, bukan \\n)
+    // Ini sering menyebabkan error "DECODER routines::unsupported" di Node.js/OpenSSL
+    if (credentials.private_key && typeof credentials.private_key === 'string') {
+      credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
     }
 
     const auth = new google.auth.GoogleAuth({
