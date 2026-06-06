@@ -20,7 +20,7 @@ export async function GET(request: Request) {
       }
     });
 
-    const contentType = response.headers['content-type'] || 'image/jpeg';
+    const contentType = (response.headers['content-type'] as string) || 'image/jpeg';
     const imageBuffer = Buffer.from(response.data);
 
     return new NextResponse(imageBuffer, {

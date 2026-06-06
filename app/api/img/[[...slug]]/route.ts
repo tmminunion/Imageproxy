@@ -39,7 +39,7 @@ export async function GET(
 
     const { image } = data;
     const base64Clean = image.replace(/^data:image\/\w+;base64,/, "");
-    let imageBuffer = Buffer.from(base64Clean, 'base64');
+    let imageBuffer: any = Buffer.from(base64Clean, 'base64');
 
     // Proses Resize
     if (width && height && !isNaN(width) && !isNaN(height)) {

@@ -47,7 +47,7 @@ export async function GET(
       }
     }
 
-    let imageBuffer = Buffer.from(base64Data, 'base64');
+    let imageBuffer: any = Buffer.from(base64Data, 'base64');
 
     // Processing with Sharp
     if (mode === 'thumb') {

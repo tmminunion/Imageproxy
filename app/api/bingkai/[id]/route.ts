@@ -25,8 +25,8 @@ export async function GET(
       responseType: 'arraybuffer'
     });
 
-    let imageBuffer = Buffer.from(response.data);
-    let contentType = response.headers['content-type'] || 'image/png';
+    let imageBuffer: any = Buffer.from(response.data);
+    let contentType = (response.headers['content-type'] as string) || 'image/png';
 
     // Handle Thumbnail Mode
     if (mode === 'thumb') {

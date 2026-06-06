@@ -24,14 +24,14 @@ export async function GET(
 
     // Metadata for content type
     const metadata = await drive.files.get({ fileId: id, fields: 'mimeType' });
-    let contentType = metadata.data.mimeType || 'image/jpeg';
+    let contentType = (metadata.data.mimeType as string) || 'image/jpeg';
 
     // Convert stream to Buffer
-    const chunks: any[] = [];
-    for await (const chunk of response.data) {
+    const chunks: Uint8Array[] = [];
+    for await (const chunk of (response.data as any)) {
       chunks.push(chunk);
     }
-    let imageBuffer = Buffer.concat(chunks);
+    let imageBuffer: any = Buffer.concat(chunks);
 
     // Image Processing with Sharp
     if (mode === 'thumb') {
