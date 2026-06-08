@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
     const host = req.headers.get('host') || 'localhost:3000';
     const baseUrl = `${protocol}://${host}`;
 
-    const formattedFiles = files.map(file => {
+    const formattedFiles = files.map((file: any) => {
       // Kita anggap yang ditampilkan adalah gambar/video yang bisa diproxy
       const isImage = file.mimeType?.startsWith('image/');
       
