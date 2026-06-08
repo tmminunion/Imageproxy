@@ -55,5 +55,15 @@ Mengunggah file *langsung* ke dalam folder tertentu menggunakan `folderId` tanpa
 - `folderId` (String) : **Wajib**. ID Folder Google Drive tujuan.
 - `user` (String) : Opsional. Nama pengguna untuk dicatat di dalam log database (Default: 'direct_upload').
 
+### 3. Lihat Daftar File di Folder (View Folder)
+`GET /api/drive/view-folder`
+
+Melihat semua daftar file yang ada di dalam sebuah folder tertentu. Endpoint ini akan mengembalikan data file lengkap dengan URL Proxy Internal (`/api/drive/[id]`) agar gambar bebas masalah CORS.
+
+**Parameter (Query):**
+- `?folderId=...` : (Opsional) Mencari file berdasarkan ID Folder spesifik.
+- `?name=...` : (Opsional) Mencari file berdasarkan nama Folder (otomatis dicek di Database).
+*Catatan: Anda harus mengirim salah satu parameter di atas.*
+
 ---
 *Dibuat dengan cinta oleh OLaive untuk Aa Baim. 💕*
