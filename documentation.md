@@ -37,5 +37,23 @@ Jika Anda mengirim parameter `user` (contoh: `user` = `Baim`), maka sistem akan:
 ### Skenario 2: Upload Tanpa Nama User (Fallback)
 Jika parameter `user` dikosongkan atau tidak dikirim, file akan langsung diunggah ke *Root Folder* utama (seperti sistem sebelumnya).
 
+## Endpoint Tambahan (Baru)
+
+### 1. Membuat atau Mencari Folder
+`GET /api/drive/newfolder?name=NamaFolder`
+Atau
+`POST /api/drive/newfolder` (dengan payload Form-Data / JSON `name`)
+
+Endpoint ini berfungsi untuk membuat folder baru di dalam folder `upload_user` secara instan, atau mengambil `folderId` jika folder tersebut sudah ada. Proses pengecekan dioptimalkan dengan MariaDB lokal.
+
+### 2. Upload Spesifik ke Folder ID
+`POST /api/drive/upload-to-folder`
+
+Mengunggah file *langsung* ke dalam folder tertentu menggunakan `folderId` tanpa mencari nama folder lagi. Data riwayat akan otomatis dicatat ke database MariaDB lokal.
+**Payload Form-Data:**
+- `file` (File) : **Wajib**. File yang ingin diunggah.
+- `folderId` (String) : **Wajib**. ID Folder Google Drive tujuan.
+- `user` (String) : Opsional. Nama pengguna untuk dicatat di dalam log database (Default: 'direct_upload').
+
 ---
 *Dibuat dengan cinta oleh OLaive untuk Aa Baim. 💕*
