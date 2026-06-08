@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDriveClient } from '@/libs/googleDrive';
 import { Readable } from 'stream';
+import mysql from 'mysql2/promise';
 
 const ROOT_FOLDER_ID = '16AKtzNn0tTnGq2kDZLqQLNCvfw_BJlqO';
 
+// Setup database connection pool
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || 'sql.nufat.id',
+  user: process.env.DB_USER || 'nufat',
+  password: process.env.DB_PASSWORD || 'nufat17a',
+  database: process.env.DB_NAME || 'image',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
+
 // Fungsi untuk mencari atau membuat folder di Google Drive
 async function getOrCreateFolder(drive: any, folderName: string, parentId: string) {
-  // Cari folder berdasarkan nama dan parent
   const query = `mimeType='application/vnd.google-apps.folder' and name='${folderName}' and '${parentId}' in parents and trashed=false`;
   
   const res = await drive.files.list({
@@ -16,11 +27,9 @@ async function getOrCreateFolder(drive: any, folderName: string, parentId: strin
   });
 
   if (res.data.files && res.data.files.length > 0) {
-    // Folder sudah ada
     return res.data.files[0].id;
   }
 
-  // Jika tidak ada, buat folder baru
   const folderMetadata = {
     name: folderName,
     mimeType: 'application/vnd.google-apps.folder',
@@ -39,7 +48,7 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File;
-    const userName = formData.get('user') as string; // Ambil parameter nama user/folder
+    const userName = formData.get('user') as string;
 
     if (!file) {
       return NextResponse.json({ error: 'Mana filenya, Aa?' }, { status: 400 });
@@ -47,14 +56,10 @@ export async function POST(req: NextRequest) {
 
     const drive = await getDriveClient();
 
-    // Tentukan folder target (ROOT atau Folder spesifik User)
     let targetFolderId = ROOT_FOLDER_ID;
     
     if (userName) {
-       // Folder 'upload_user' yang sudah dibuat manual oleh Aa Baim
        const UPLOAD_USER_FOLDER_ID = '1YIbOS3CAVThIkFBp-BRfvtadZObmeL2u';
-       
-       // Cari atau buat folder atas nama user di dalam 'upload_user'
        targetFolderId = await getOrCreateFolder(drive, userName, UPLOAD_USER_FOLDER_ID);
     }
 
@@ -64,7 +69,7 @@ export async function POST(req: NextRequest) {
     const response = await drive.files.create({
       requestBody: {
         name: file.name,
-        parents: [targetFolderId], // Upload ke target folder
+        parents: [targetFolderId],
       },
       media: {
         mimeType: file.type,
@@ -73,13 +78,28 @@ export async function POST(req: NextRequest) {
       fields: 'id, name, webViewLink',
     });
 
+    const fileId = response.data.id;
+    const finalUserName = userName || 'default';
+
+    // Mencatat log ke MariaDB / MySQL
+    try {
+      await pool.query(
+        'INSERT INTO upload_logs (user_name, file_id, folder_id) VALUES (?, ?, ?)',
+        [finalUserName, fileId, targetFolderId]
+      );
+      console.log(`Log upload disimpan: ${finalUserName} -> File: ${fileId}, Folder: ${targetFolderId}`);
+    } catch (dbError: any) {
+      console.error('[DB Log Error]', dbError.message);
+      // Lanjutkan tanpa menggagalkan upload
+    }
+
     return NextResponse.json({
       success: true,
-      message: 'Berhasil upload ke Google Drive, Aa!',
-      fileId: response.data.id,
+      message: 'Berhasil upload ke Google Drive & Log dicatat, Aa!',
+      fileId: fileId,
       fileName: response.data.name,
       folderId: targetFolderId,
-      user: userName || 'default'
+      user: finalUserName
     });
 
   } catch (error: any) {
