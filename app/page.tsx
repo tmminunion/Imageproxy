@@ -30,7 +30,37 @@ interface AppwriteFile {
 type TabType = 'svg-editor' | 'svg-gallery' | 'drive' | 'remove-bg' | 'appwrite' | 'text-presets';
 
 export default function UnifiedDashboard() {
+  const [isMounted, setIsMounted] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [usernameInput, setUsernameInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [loginError, setLoginError] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('svg-editor');
+
+  useEffect(() => {
+    setIsMounted(true);
+    if (localStorage.getItem('nufat_studio_auth') === 'true') {
+      setIsLoggedIn(true);
+    }
+  }, []);
+
+  const handleLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (usernameInput === 'admin' && passwordInput === 'Olaive144') {
+      localStorage.setItem('nufat_studio_auth', 'true');
+      setIsLoggedIn(true);
+      setLoginError('');
+    } else {
+      setLoginError('Kredensial salah ya, aa Baim! Coba cek lagi 🥺');
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('nufat_studio_auth');
+    setIsLoggedIn(false);
+    setUsernameInput('');
+    setPasswordInput('');
+  };
   
   // --- SVG STATES ---
   const [svgs, setSvgs] = useState<SvgItem[]>([]);
@@ -440,6 +470,81 @@ export default function UnifiedDashboard() {
     return null;
   };
 
+  if (!isMounted) {
+    return (
+      <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-[#020617] text-slate-200 selection:bg-indigo-500/30 font-sans flex items-center justify-center relative overflow-hidden">
+        {/* BACKGROUND DECO */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+          <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] bg-indigo-600/15 blur-[150px] rounded-full"></div>
+          <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-purple-600/10 blur-[150px] rounded-full"></div>
+        </div>
+
+        <div className="relative z-10 w-full max-w-md mx-4">
+          <div className="bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-10 shadow-2xl flex flex-col space-y-8 relative overflow-hidden group">
+            {/* Ambient glow */}
+            <div className="absolute -inset-px bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-[3rem] opacity-0 group-hover:opacity-100 transition-all duration-700 pointer-events-none" />
+            
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-[2rem] flex items-center justify-center shadow-xl shadow-indigo-500/20 mb-2 animate-bounce">
+                <span className="text-3xl">💎</span>
+              </div>
+              <h1 className="text-3xl font-black tracking-tighter bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">Nufat Studio</h1>
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-[0.2em]">Protected Workspace</p>
+              <p className="text-xs text-slate-500 italic">"Pintu masuk studio khusus untuk aa Baim tercinta ❤️"</p>
+            </div>
+
+            <form onSubmit={handleLoginSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block">Username</label>
+                <input 
+                  type="text" 
+                  value={usernameInput}
+                  onChange={(e) => setUsernameInput(e.target.value)}
+                  placeholder="Masukkan username..." 
+                  className="w-full bg-slate-900/50 border border-white/10 rounded-2xl px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-slate-200 placeholder:text-slate-800"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block">Password</label>
+                <input 
+                  type="password" 
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  placeholder="Masukkan password..." 
+                  className="w-full bg-slate-900/50 border border-white/10 rounded-2xl px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-slate-200 placeholder:text-slate-800"
+                  required
+                />
+              </div>
+
+              {loginError && (
+                <div className="bg-rose-500/10 text-rose-400 p-4 rounded-2xl border border-rose-500/20 text-xs font-bold text-center animate-pulse">
+                  ⚠️ {loginError}
+                </div>
+              )}
+
+              <button 
+                type="submit"
+                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black py-4 px-10 rounded-2xl transition-all shadow-xl shadow-indigo-600/30 active:scale-95 text-sm"
+              >
+                🔐 Masuk ke Studio
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 selection:bg-indigo-500/30 font-sans">
       {/* BACKGROUND DECO */}
@@ -488,12 +593,20 @@ export default function UnifiedDashboard() {
             ))}
           </nav>
 
-          <div className="bg-white/5 rounded-3xl p-5 border border-white/5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Server</span>
+          <div className="bg-white/5 rounded-3xl p-5 border border-white/5 space-y-4">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Server</span>
+              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed font-medium">Hello Aa Baim! Semua sistem berjalan normal. Selamat berkarya ❤️</p>
             </div>
-            <p className="text-[11px] text-slate-500 leading-relaxed font-medium">Hello Aa Baim! Semua sistem berjalan normal. Selamat berkarya ❤️</p>
+            <button
+              onClick={handleLogout}
+              className="w-full bg-rose-500/10 hover:bg-rose-600/20 text-rose-400 hover:text-rose-300 border border-rose-500/10 hover:border-rose-500/20 text-xs font-black py-3 rounded-2xl transition-all flex items-center justify-center gap-2"
+            >
+              🚪 Keluar Studio
+            </button>
           </div>
         </aside>
 
