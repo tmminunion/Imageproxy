@@ -36,6 +36,7 @@ export default function UnifiedDashboard() {
   const [passwordInput, setPasswordInput] = useState('');
   const [loginError, setLoginError] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('svg-editor');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -703,7 +704,7 @@ export default function UnifiedDashboard() {
         </div>
 
         <div className="relative z-10 w-full max-w-md mx-4">
-          <div className="bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-10 shadow-2xl flex flex-col space-y-8 relative overflow-hidden group">
+          <div className="bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 shadow-2xl flex flex-col space-y-8 relative overflow-hidden group">
             {/* Ambient glow */}
             <div className="absolute -inset-px bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-[3rem] opacity-0 group-hover:opacity-100 transition-all duration-700 pointer-events-none" />
             
@@ -770,8 +771,41 @@ export default function UnifiedDashboard() {
 
       <div className="relative z-10 flex flex-col md:flex-row h-screen overflow-hidden">
         
+        {/* MOBILE TOP BAR */}
+        <header className="flex md:hidden items-center justify-between px-6 py-4 bg-[#020617]/80 backdrop-blur-xl border-b border-white/5 w-full shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+              <span className="text-sm">💎</span>
+            </div>
+            <div>
+              <h1 className="text-lg font-black tracking-tighter bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Nufat Studio</h1>
+            </div>
+          </div>
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="p-2 text-slate-400 hover:text-slate-200 focus:outline-none"
+            aria-label="Toggle menu"
+          >
+            {isMobileMenuOpen ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            )}
+          </button>
+        </header>
+
+        {/* MOBILE MENU BACKDROP */}
+        {isMobileMenuOpen && (
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden" 
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
+
         {/* SIDEBAR NAVIGATION */}
-        <aside className="w-full md:w-72 bg-white/5 backdrop-blur-3xl border-r border-white/5 flex flex-col p-6 space-y-8">
+        <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-[#020617]/95 backdrop-blur-2xl border-r border-white/10 flex flex-col p-6 space-y-8 transition-transform duration-300 md:static md:translate-x-0 md:bg-white/5 md:border-white/5 md:z-auto ${
+          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}>
           <div className="flex items-center gap-3 px-2">
             <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
               <span className="text-xl">💎</span>
@@ -793,7 +827,10 @@ export default function UnifiedDashboard() {
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as TabType)}
+                onClick={() => {
+                  setActiveTab(tab.id as TabType);
+                  setIsMobileMenuOpen(false);
+                }}
                 className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 group ${
                   activeTab === tab.id 
                     ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-600/20 translate-x-1' 
@@ -817,7 +854,10 @@ export default function UnifiedDashboard() {
               <p className="text-[11px] text-slate-500 leading-relaxed font-medium">Hello Aa Baim! Semua sistem berjalan normal. Selamat berkarya ❤️</p>
             </div>
             <button
-              onClick={handleLogout}
+              onClick={() => {
+                handleLogout();
+                setIsMobileMenuOpen(false);
+              }}
               className="w-full bg-rose-500/10 hover:bg-rose-600/20 text-rose-400 hover:text-rose-300 border border-rose-500/10 hover:border-rose-500/20 text-xs font-black py-3 rounded-2xl transition-all flex items-center justify-center gap-2"
             >
               🚪 Keluar Studio
@@ -881,8 +921,8 @@ export default function UnifiedDashboard() {
                   </div>
 
                   <div className="lg:col-span-8 space-y-8">
-                    <div className="bg-white/5 backdrop-blur-xl rounded-[3rem] p-10 border border-white/10 shadow-2xl flex flex-col items-center justify-center relative min-h-[500px]">
-                      <div className="w-full max-w-[350px] aspect-square bg-slate-950/40 border border-white/5 rounded-[4rem] flex items-center justify-center p-12 shadow-inner group">
+                    <div className="bg-white/5 backdrop-blur-xl rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 border border-white/10 shadow-2xl flex flex-col items-center justify-center relative min-h-[400px] md:min-h-[500px]">
+                      <div className="w-full max-w-[300px] sm:max-w-[350px] aspect-square bg-slate-950/40 border border-white/5 rounded-[2.5rem] sm:rounded-[4rem] flex items-center justify-center p-6 sm:p-12 shadow-inner group">
                         <div dangerouslySetInnerHTML={{ __html: svgCode }} className="w-full h-full drop-shadow-[0_0_50px_rgba(99,102,241,0.3)] transition-transform duration-500 group-hover:scale-105" />
                       </div>
                       
@@ -923,13 +963,13 @@ export default function UnifiedDashboard() {
                     <p className="text-lg font-bold">Belum ada karya nih, Aa.</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                     {svgs.map((item) => (
-                      <div key={item.id} className="group bg-white/5 rounded-[2.5rem] border border-white/5 overflow-hidden hover:border-indigo-500/50 hover:bg-white/10 transition-all duration-500 shadow-xl">
-                        <div className="aspect-square bg-slate-950/30 flex items-center justify-center p-10 relative">
+                      <div key={item.id} className="group bg-white/5 rounded-[1.5rem] md:rounded-[2.5rem] border border-white/5 overflow-hidden hover:border-indigo-500/50 hover:bg-white/10 transition-all duration-500 shadow-xl">
+                        <div className="aspect-square bg-slate-950/30 flex items-center justify-center p-6 md:p-10 relative">
                            <div dangerouslySetInnerHTML={{ __html: item.svg_content }} className="w-full h-full drop-shadow-xl group-hover:scale-110 transition-transform duration-500" />
                         </div>
-                        <div className="p-6 border-t border-white/5 flex flex-col space-y-3">
+                        <div className="p-4 md:p-6 border-t border-white/5 flex flex-col space-y-3">
                           <h3 className="font-black text-sm truncate">{item.title}</h3>
                           <div className="flex justify-between items-center">
                             <span className="text-[9px] font-black text-slate-600 uppercase">{new Date(item.created_at).toLocaleDateString()}</span>
@@ -981,7 +1021,7 @@ export default function UnifiedDashboard() {
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {driveFiles.map((file) => (
-                      <div key={file.id} className="group bg-white/5 rounded-[2rem] border border-white/5 overflow-hidden hover:border-indigo-500/50 transition-all duration-300 shadow-xl flex flex-col">
+                      <div key={file.id} className="group bg-white/5 rounded-[1.5rem] md:rounded-[2rem] border border-white/5 overflow-hidden hover:border-indigo-500/50 transition-all duration-300 shadow-xl flex flex-col">
                         <div className="aspect-video bg-slate-950/40 relative overflow-hidden flex items-center justify-center">
                           {file.thumbnail ? (
                              <img src={file.thumbnail} alt={file.name} className="w-full h-full object-cover opacity-60 group-hover:scale-110 group-hover:opacity-100 transition-all duration-700" />
@@ -990,7 +1030,7 @@ export default function UnifiedDashboard() {
                           )}
                           <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent opacity-80"></div>
                         </div>
-                        <div className="p-6 space-y-4">
+                        <div className="p-4 md:p-6 space-y-4">
                           <h3 className="font-black text-sm text-slate-200 truncate" title={file.name}>{file.name}</h3>
                           <div className="flex items-center justify-between">
                             <span className="text-[9px] font-black text-indigo-400 uppercase bg-indigo-400/10 px-3 py-1.5 rounded-lg border border-indigo-400/10">{(parseInt(file.size) / 1024 / 1024).toFixed(2)} MB</span>
@@ -1024,9 +1064,9 @@ export default function UnifiedDashboard() {
                     <p className="text-lg font-bold">Bingkai tidak ditemukan.</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                     {appwriteFiles.map((file) => (
-                      <div key={file.id} className="group bg-white/5 rounded-[2.5rem] border border-white/5 overflow-hidden hover:border-purple-500/50 hover:bg-white/10 transition-all duration-500 shadow-xl">
+                      <div key={file.id} className="group bg-white/5 rounded-[1.5rem] md:rounded-[2.5rem] border border-white/5 overflow-hidden hover:border-purple-500/50 hover:bg-white/10 transition-all duration-500 shadow-xl">
                         <div className="aspect-square bg-slate-950/30 flex items-center justify-center p-6 relative overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-repeat">
                            <img 
                              src={file.src} 
@@ -1034,7 +1074,7 @@ export default function UnifiedDashboard() {
                              className="w-full h-full object-contain drop-shadow-2xl group-hover:scale-110 transition-transform duration-500" 
                            />
                         </div>
-                        <div className="p-6 border-t border-white/5 flex flex-col space-y-2">
+                        <div className="p-4 md:p-6 border-t border-white/5 flex flex-col space-y-2">
                           <h3 className="font-black text-sm truncate">{file.name}</h3>
                           <div className="flex justify-between items-center">
                             <span className="text-[9px] font-black text-purple-400 uppercase bg-purple-400/10 px-3 py-1.5 rounded-lg">Appwrite Bucket</span>
@@ -1064,10 +1104,10 @@ export default function UnifiedDashboard() {
                   <p className="text-slate-400 text-sm mt-1 font-medium">Hapus background foto secara instan bertenaga AI.</p>
                 </header>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
-                   <div className="bg-white/5 rounded-[3rem] p-8 border border-white/10 space-y-8 flex flex-col">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-stretch">
+                   <div className="bg-white/5 rounded-[2rem] md:rounded-[3rem] p-6 md:p-8 border border-white/10 space-y-6 md:space-y-8 flex flex-col">
                       <div 
-                        className="flex-1 border-2 border-dashed border-white/10 rounded-[2rem] flex flex-col items-center justify-center p-8 text-center cursor-pointer hover:border-indigo-500/40 transition-all relative overflow-hidden group"
+                        className="flex-1 border-2 border-dashed border-white/10 rounded-[1.5rem] md:rounded-[2rem] p-6 md:p-8 text-center cursor-pointer hover:border-indigo-500/40 transition-all relative overflow-hidden group"
                         onClick={() => document.getElementById('rbg-input')?.click()}
                       >
                         {rbgPreview ? (
@@ -1083,7 +1123,7 @@ export default function UnifiedDashboard() {
                       
                       <button 
                         onClick={handleRbgSubmit} disabled={rbgLoading || !rbgImage}
-                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-indigo-600/20 active:scale-95 disabled:opacity-50"
+                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-indigo-600/30 active:scale-95 disabled:opacity-50 text-sm"
                       >
                         {rbgLoading ? 'Sedang Menyulap...' : '🪄 Hapus Background'}
                       </button>
@@ -1091,8 +1131,8 @@ export default function UnifiedDashboard() {
                       {rbgError && <p className="text-rose-400 text-center text-xs font-bold">⚠️ {rbgError}</p>}
                    </div>
 
-                   <div className="bg-white/5 rounded-[3rem] p-8 border border-white/10 space-y-8 flex flex-col">
-                      <div className="flex-1 bg-slate-950/40 rounded-[2rem] border border-white/5 flex flex-col items-center justify-center relative overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-repeat">
+                   <div className="bg-white/5 rounded-[2rem] md:rounded-[3rem] p-6 md:p-8 border border-white/10 space-y-6 md:space-y-8 flex flex-col">
+                      <div className="flex-1 bg-slate-950/40 rounded-[1.5rem] md:rounded-[2rem] border border-white/5 flex flex-col items-center justify-center relative overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-repeat">
                         {rbgResult ? (
                           <img src={rbgResult} alt="Result" className="max-h-full object-contain p-4 drop-shadow-2xl" />
                         ) : (
@@ -1131,7 +1171,7 @@ export default function UnifiedDashboard() {
                 </header>
 
                 {showPresetForm ? (
-                  <div className="bg-white/5 border border-white/10 rounded-[3rem] p-8 md:p-10 space-y-8 animate-in fade-in zoom-in-95 duration-300">
+                  <div className="bg-white/5 border border-white/10 rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 space-y-6 md:space-y-8 animate-in fade-in zoom-in-95 duration-300">
                     <div className="flex justify-between items-center border-b border-white/10 pb-6">
                       <h3 className="text-xl font-black text-indigo-400">
                         {editingPreset ? '✏️ Edit Preset Teks' : '✨ Buat Preset Baru'}
@@ -1241,7 +1281,7 @@ export default function UnifiedDashboard() {
                         </div>
 
                         {/* Effects Section */}
-                        <div className="bg-white/5 rounded-3xl p-6 border border-white/5 space-y-6">
+                        <div className="bg-white/5 rounded-[1.5rem] md:rounded-3xl p-4 md:p-6 border border-white/5 space-y-4 md:space-y-6">
                           <h4 className="text-sm font-black text-indigo-400 uppercase tracking-wider border-b border-white/5 pb-3">Efek Teks</h4>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -1508,7 +1548,7 @@ export default function UnifiedDashboard() {
                       <div className="lg:col-span-5 space-y-6 flex flex-col justify-between">
                         <div className="space-y-4">
                           <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block">Live Render Preview</label>
-                          <div className="aspect-square bg-slate-950/50 rounded-[3rem] border border-white/10 flex items-center justify-center p-8 bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-repeat shadow-inner min-h-[300px]">
+                          <div className="aspect-square bg-slate-950/50 rounded-[2rem] md:rounded-[3rem] border border-white/10 flex items-center justify-center p-6 md:p-8 bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-repeat shadow-inner min-h-[250px] md:min-h-[300px]">
                             <span 
                               style={getPresetStyle(presetColor, presetStyle, presetFont)} 
                               className="text-3xl md:text-5xl font-black text-center break-words max-w-full drop-shadow-2xl transition-all duration-300"
@@ -1538,10 +1578,10 @@ export default function UnifiedDashboard() {
                         <p className="text-lg font-bold">Preset kosong nih, Aa. Klik tombol "Buat Preset Baru" untuk memulai! ❤️</p>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                         {presets.map((preset) => (
-                          <div key={preset.id} className="group bg-white/5 rounded-[2.5rem] border border-white/5 overflow-hidden hover:border-indigo-500/50 hover:bg-white/10 transition-all duration-500 shadow-xl flex flex-col justify-between">
-                            <div className="aspect-[2/1] bg-slate-950/30 flex items-center justify-center p-10 relative overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-repeat border-b border-white/5">
+                          <div key={preset.id} className="group bg-white/5 rounded-[1.5rem] md:rounded-[2.5rem] border border-white/5 overflow-hidden hover:border-indigo-500/50 hover:bg-white/10 transition-all duration-500 shadow-xl flex flex-col justify-between">
+                            <div className="aspect-[2/1] bg-slate-950/30 flex items-center justify-center p-6 md:p-10 relative overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-repeat border-b border-white/5">
                               <span 
                                 style={getPresetStyle(preset.color, preset.style, preset.fontFamily)}
                                 className="text-3xl font-black text-center break-words max-w-full group-hover:scale-105 transition-transform duration-500"
@@ -1549,7 +1589,7 @@ export default function UnifiedDashboard() {
                                 {preset.text}
                               </span>
                             </div>
-                            <div className="p-6 space-y-4">
+                            <div className="p-4 md:p-6 space-y-4">
                               <div>
                                 <h3 className="font-black text-base text-slate-200">{preset.name}</h3>
                                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">
