@@ -132,6 +132,12 @@ export default function UnifiedDashboard() {
     textTransform: 'uppercase'
   });
 
+  // --- AI GEN STATES ---
+  const [svgPrompt, setSvgPrompt] = useState('');
+  const [aiSvgLoading, setAiSvgLoading] = useState(false);
+  const [presetPrompt, setPresetPrompt] = useState('');
+  const [aiPresetLoading, setAiPresetLoading] = useState(false);
+
   useEffect(() => {
     // Load standard Google Fonts dynamically
     const fonts = ['Orbitron', 'Bebas Neue', 'Pacifico', 'Cinzel', 'Press Start 2P', 'Anton', 'Permanent Marker', 'Montserrat'];
@@ -533,6 +539,70 @@ export default function UnifiedDashboard() {
     setShowPresetForm(true);
   };
 
+  const handleGenerateSvgAi = async () => {
+    if (!svgPrompt.trim()) return;
+    setAiSvgLoading(true);
+    try {
+      const res = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'svg', prompt: svgPrompt })
+      });
+      const data = await res.json();
+      if (data.success && data.result) {
+        setSvgCode(data.result);
+        setSelectedPathIndex(null);
+        setSvgTitle(svgPrompt.length > 20 ? svgPrompt.substring(0, 17) + '...' : svgPrompt);
+        alert('SVG berhasil dibuat oleh Gemini! ✨');
+      } else {
+        alert(data.error || 'Gagal generate SVG.');
+      }
+    } catch (err: any) {
+      alert('Error: ' + err.message);
+    } finally {
+      setAiSvgLoading(false);
+    }
+  };
+
+  const handleGeneratePresetAi = async () => {
+    if (!presetPrompt.trim()) return;
+    setAiPresetLoading(true);
+    try {
+      const res = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'preset', prompt: presetPrompt })
+      });
+      const data = await res.json();
+      if (data.success && data.result) {
+        const gen = data.result;
+        if (gen.name) setPresetName(gen.name);
+        if (gen.style) setPresetStyle(gen.style);
+        if (gen.text) setPresetText(gen.text);
+        if (gen.fontFamily) setPresetFont(gen.fontFamily);
+        if (gen.color) setPresetColor(gen.color);
+        if (gen.effects) {
+          const fx = gen.effects;
+          setPresetEffects({
+            fillType: fx.fillType || 'solid',
+            gradient: fx.gradient || { type: 'linear', angle: 45, stops: [{ offset: 0, color: '#00f2fe' }, { offset: 100, color: '#f43f5e' }] },
+            stroke: fx.stroke || { color: '#000000', width: 1.5 },
+            shadows: fx.shadows || [{ x: 1, y: 1, blur: 0, color: '#000000' }],
+            letterSpacing: fx.letterSpacing || 2,
+            textTransform: fx.textTransform || 'uppercase'
+          });
+        }
+        alert('Desain preset siber berhasil dibuat oleh Gemini! ✨');
+      } else {
+        alert(data.error || 'Gagal generate preset.');
+      }
+    } catch (err: any) {
+      alert('Error: ' + err.message);
+    } finally {
+      setAiPresetLoading(false);
+    }
+  };
+
   const getPresetStyle = (color: string, styleId: string, fontFamily: string) => {
     const baseStyle: React.CSSProperties = {
       fontFamily: fontFamily || 'Orbitron',
@@ -918,6 +988,30 @@ export default function UnifiedDashboard() {
                          </div>
                        )}
                     </div>
+
+                     {/* AI SVG GENERATOR */}
+                     <div className="bg-white/5 backdrop-blur-xl rounded-[2rem] md:rounded-[2.5rem] p-5 md:p-6 border border-white/10 shadow-2xl space-y-4">
+                        <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block">AI Generator ✨</label>
+                        <textarea
+                          value={svgPrompt}
+                          onChange={(e) => setSvgPrompt(e.target.value)}
+                          placeholder="Tulis ide gambar Aa... (contoh: a glowing circular retro shield)"
+                          className="w-full bg-slate-900/50 border border-white/10 rounded-2xl px-4 py-3 text-xs text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-slate-700 h-20 resize-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleGenerateSvgAi}
+                          disabled={aiSvgLoading || !svgPrompt.trim()}
+                          className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black py-3 px-4 rounded-2xl transition-all shadow-xl active:scale-95 disabled:opacity-50 text-xs flex items-center justify-center gap-2"
+                        >
+                          {aiSvgLoading ? (
+                            <>
+                              <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                              Sedang Menggambar...
+                            </>
+                          ) : '🪄 Generate SVG via AI'}
+                        </button>
+                     </div>
                   </div>
 
                   <div className="lg:col-span-8 space-y-8">
@@ -1187,6 +1281,33 @@ export default function UnifiedDashboard() {
                     <form onSubmit={handleSavePreset} className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                       {/* Left: Inputs */}
                       <div className="lg:col-span-7 space-y-6">
+                        {/* AI PRESET GENERATOR */}
+                        <div className="bg-white/5 rounded-[1.5rem] md:rounded-3xl p-4 md:p-6 border border-white/5 space-y-4">
+                           <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block">Rancang dengan AI ✨</label>
+                           <div className="flex gap-4">
+                             <input
+                               type="text"
+                               value={presetPrompt}
+                               onChange={(e) => setPresetPrompt(e.target.value)}
+                               placeholder="Contoh: cyberpunk neon pink dan cyan..."
+                               className="flex-1 bg-slate-950/40 border border-white/10 rounded-2xl px-5 py-3.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-slate-200 placeholder:text-slate-700"
+                             />
+                             <button
+                               type="button"
+                               onClick={handleGeneratePresetAi}
+                               disabled={aiPresetLoading || !presetPrompt.trim()}
+                               className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs px-6 py-3 rounded-2xl transition-all shadow-lg active:scale-95 disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+                             >
+                               {aiPresetLoading ? (
+                                 <>
+                                   <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                                   Mendesain...
+                                 </>
+                               ) : '🪄 Generate Preset'}
+                             </button>
+                           </div>
+                        </div>
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">ID Preset (slug)</label>
