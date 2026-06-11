@@ -27,7 +27,7 @@ interface AppwriteFile {
   category: string;
 }
 
-type TabType = 'svg-editor' | 'svg-gallery' | 'drive' | 'remove-bg' | 'appwrite';
+type TabType = 'svg-editor' | 'svg-gallery' | 'drive' | 'remove-bg' | 'appwrite' | 'text-presets';
 
 export default function UnifiedDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('svg-editor');
@@ -66,10 +66,58 @@ export default function UnifiedDashboard() {
   const [rbgLoading, setRbgLoading] = useState(false);
   const [rbgError, setRbgError] = useState<string | null>(null);
 
+  // --- PRESET STATES ---
+  const [presets, setPresets] = useState<any[]>([]);
+  const [presetLoading, setPresetLoading] = useState(false);
+  const [presetSaving, setPresetSaving] = useState(false);
+  const [editingPreset, setEditingPreset] = useState<any | null>(null);
+  const [showPresetForm, setShowPresetForm] = useState(false);
+
+  // Preset Form fields
+  const [presetId, setPresetId] = useState('');
+  const [presetName, setPresetName] = useState('');
+  const [presetText, setPresetText] = useState('TEXT PRESET');
+  const [presetFont, setPresetFont] = useState('Orbitron');
+  const [presetColor, setPresetColor] = useState('#ffffff');
+  const [presetEffects, setPresetEffects] = useState<any>({
+    fillType: 'solid',
+    gradient: {
+      type: 'linear',
+      angle: 45,
+      stops: [
+        { offset: 0, color: '#00f2fe' },
+        { offset: 100, color: '#f43f5e' }
+      ]
+    },
+    stroke: {
+      color: '#000000',
+      width: 1.5
+    },
+    shadows: [
+      { x: 1, y: 1, blur: 0, color: '#000000' }
+    ],
+    letterSpacing: 2,
+    textTransform: 'uppercase'
+  });
+
+  useEffect(() => {
+    // Load standard Google Fonts dynamically
+    const fonts = ['Orbitron', 'Bebas Neue', 'Pacifico', 'Cinzel', 'Press Start 2P', 'Anton', 'Permanent Marker', 'Montserrat'];
+    const linkId = 'preset-fonts-link';
+    if (!document.getElementById(linkId)) {
+      const link = document.createElement('link');
+      link.id = linkId;
+      link.rel = 'stylesheet';
+      link.href = `https://fonts.googleapis.com/css2?${fonts.map(f => `family=${f.replace(' ', '+')}`).join('&')}&display=swap`;
+      document.head.appendChild(link);
+    }
+  }, []);
+
   useEffect(() => {
     if (activeTab === 'svg-gallery') fetchSvgs();
     if (activeTab === 'drive') fetchDriveFiles();
     if (activeTab === 'appwrite') fetchAppwriteFiles();
+    if (activeTab === 'text-presets') fetchPresets();
   }, [activeTab]);
 
   // --- SVG LOGIC ---
@@ -215,6 +263,168 @@ export default function UnifiedDashboard() {
     }
   };
 
+  // --- PRESET CRUD LOGIC ---
+  const fetchPresets = async () => {
+    try {
+      setPresetLoading(true);
+      const res = await fetch('/api/textpreset');
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setPresets(data);
+      }
+    } catch (err: any) {
+      console.error('Fetch presets error:', err.message);
+    } finally {
+      setPresetLoading(false);
+    }
+  };
+
+  const handleSavePreset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!presetId.trim() || !presetName.trim()) {
+      alert('ID dan Nama Preset harus diisi ya, Aa!');
+      return;
+    }
+
+    setPresetSaving(true);
+    try {
+      const payload = {
+        id: presetId,
+        name: presetName,
+        text: presetText || 'TEXT',
+        fontFamily: presetFont,
+        color: presetColor,
+        effects: presetEffects
+      };
+
+      const res = await fetch('/api/textpreset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alert('Preset berhasil disimpan! ✨');
+        setShowPresetForm(false);
+        setEditingPreset(null);
+        fetchPresets();
+      } else {
+        alert('Gagal menyimpan: ' + data.error);
+      }
+    } catch (err: any) {
+      alert('Error: ' + err.message);
+    } finally {
+      setPresetSaving(false);
+    }
+  };
+
+  const handleDeletePreset = async (id: string) => {
+    if (!confirm('Aa Baim yakin ingin menghapus preset ini? 🥺')) return;
+
+    try {
+      const res = await fetch(`/api/textpreset?id=${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        alert('Preset berhasil dihapus! 💔');
+        fetchPresets();
+      } else {
+        alert('Gagal menghapus: ' + data.error);
+      }
+    } catch (err: any) {
+      alert('Error: ' + err.message);
+    }
+  };
+
+  const startEditPreset = (preset: any) => {
+    setEditingPreset(preset);
+    setPresetId(preset.id);
+    setPresetName(preset.name);
+    setPresetText(preset.text);
+    setPresetFont(preset.fontFamily || 'Orbitron');
+    setPresetColor(preset.color || '#ffffff');
+    
+    const fx = preset.effects || {};
+    setPresetEffects({
+      fillType: fx.fillType || 'solid',
+      gradient: fx.gradient || { type: 'linear', angle: 45, stops: [{ offset: 0, color: '#00f2fe' }, { offset: 100, color: '#f43f5e' }] },
+      stroke: fx.stroke || { color: '#000000', width: 1.5 },
+      shadows: fx.shadows || [{ x: 1, y: 1, blur: 0, color: '#000000' }],
+      letterSpacing: fx.letterSpacing || 2,
+      textTransform: fx.textTransform || 'uppercase'
+    });
+    setShowPresetForm(true);
+  };
+
+  const startCreatePreset = () => {
+    setEditingPreset(null);
+    setPresetId('');
+    setPresetName('');
+    setPresetText('TEXT PRESET');
+    setPresetFont('Orbitron');
+    setPresetColor('#ffffff');
+    setPresetEffects({
+      fillType: 'solid',
+      gradient: { type: 'linear', angle: 45, stops: [{ offset: 0, color: '#00f2fe' }, { offset: 100, color: '#f43f5e' }] },
+      stroke: { color: '#000000', width: 1.5 },
+      shadows: [{ x: 1, y: 1, blur: 0, color: '#000000' }],
+      letterSpacing: 2,
+      textTransform: 'uppercase'
+    });
+    setShowPresetForm(true);
+  };
+
+  const getPresetStyle = (color: string, effects: any) => {
+    if (!effects) return {};
+    const style: React.CSSProperties = {
+      color: color,
+      fontFamily: effects.fontFamily || 'Orbitron',
+    };
+
+    if (effects.letterSpacing !== undefined) {
+      style.letterSpacing = `${effects.letterSpacing}px`;
+    }
+    if (effects.textTransform) {
+      style.textTransform = effects.textTransform;
+    }
+
+    // Stroke
+    if (effects.stroke && effects.stroke.width > 0) {
+      style.WebkitTextStroke = `${effects.stroke.width}px ${effects.stroke.color}`;
+    } else {
+      style.WebkitTextStroke = 'unset';
+    }
+
+    // Gradient or Solid Fill
+    if (effects.fillType === 'gradient' && effects.gradient && effects.gradient.stops) {
+      const stops = effects.gradient.stops || [];
+      const stopString = stops.map((s: any) => `${s.color} ${s.offset}%`).join(', ');
+      style.backgroundImage = `linear-gradient(${effects.gradient.angle || 0}deg, ${stopString})`;
+      style.WebkitBackgroundClip = 'text';
+      style.WebkitTextFillColor = 'transparent';
+    } else {
+      style.backgroundImage = 'none';
+      style.WebkitBackgroundClip = 'unset';
+      style.WebkitTextFillColor = 'unset';
+    }
+
+    // Shadows
+    if (effects.shadows && Array.isArray(effects.shadows) && effects.shadows.length > 0) {
+      style.textShadow = textShadowValue(effects.shadows);
+    } else {
+      style.textShadow = 'none';
+    }
+
+    return style;
+  };
+
+  const textShadowValue = (shadows: any[]) => {
+    return shadows
+      .filter((s: any) => s && s.color)
+      .map((s: any) => `${s.x || 0}px ${s.y || 0}px ${s.blur || 0}px ${s.color}`)
+      .join(', ');
+  };
+
   // --- UI COMPONENTS ---
   const Icon = ({ name }: { name: string }) => {
     if (name === 'editor') return <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>;
@@ -222,6 +432,7 @@ export default function UnifiedDashboard() {
     if (name === 'drive') return <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>;
     if (name === 'magic') return <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>;
     if (name === 'bingkai') return <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M3 9h18"></path><path d="M9 21V9"></path></svg>;
+    if (name === 'text') return <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>;
     return null;
   };
 
@@ -254,6 +465,7 @@ export default function UnifiedDashboard() {
               { id: 'drive', label: 'Cloud Drive', icon: 'drive' },
               { id: 'appwrite', label: 'Appwrite Frames', icon: 'bingkai' },
               { id: 'remove-bg', label: 'Magic Remove', icon: 'magic' },
+              { id: 'text-presets', label: 'Text Presets', icon: 'text' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -563,8 +775,455 @@ export default function UnifiedDashboard() {
                           📥 Download PNG
                         </a>
                       )}
-                   </div>
-                </div>
+                    </div>
+                 </div>
+               </div>
+             )}
+
+            {/* 6. TEXT PRESETS */}
+            {activeTab === 'text-presets' && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+                <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-3xl font-black tracking-tight font-sans">Text Presets 🪄</h2>
+                    <p className="text-slate-400 text-sm mt-1 font-medium">Kelola dan kustomisasi gaya teks preset untuk API.</p>
+                  </div>
+                  {!showPresetForm && (
+                    <button
+                      onClick={startCreatePreset}
+                      className="bg-indigo-600 hover:bg-indigo-500 text-white font-black text-sm px-8 py-4 rounded-2xl transition-all shadow-xl shadow-indigo-600/20 active:scale-95"
+                    >
+                      ✨ Buat Preset Baru
+                    </button>
+                  )}
+                </header>
+
+                {showPresetForm ? (
+                  <div className="bg-white/5 border border-white/10 rounded-[3rem] p-8 md:p-10 space-y-8 animate-in fade-in zoom-in-95 duration-300">
+                    <div className="flex justify-between items-center border-b border-white/10 pb-6">
+                      <h3 className="text-xl font-black text-indigo-400">
+                        {editingPreset ? '✏️ Edit Preset Teks' : '✨ Buat Preset Baru'}
+                      </h3>
+                      <button 
+                        onClick={() => { setShowPresetForm(false); setEditingPreset(null); }}
+                        className="bg-white/5 hover:bg-white/10 text-slate-400 hover:text-slate-200 px-5 py-2.5 rounded-xl text-xs font-black transition-all"
+                      >
+                        Batal
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleSavePreset} className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                      {/* Left: Inputs */}
+                      <div className="lg:col-span-7 space-y-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">ID Preset (slug)</label>
+                            <input 
+                              type="text" 
+                              value={presetId} 
+                              onChange={(e) => setPresetId(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ''))}
+                              placeholder="contoh: neon-glow-v2"
+                              disabled={!!editingPreset}
+                              className="w-full bg-slate-950/40 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-slate-200"
+                            />
+                            {editingPreset && <p className="text-[10px] text-slate-500 italic">ID preset tidak dapat diubah setelah dibuat.</p>}
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Nama Preset</label>
+                            <input 
+                              type="text" 
+                              value={presetName} 
+                              onChange={(e) => setPresetName(e.target.value)}
+                              placeholder="contoh: Neon Glow V2"
+                              className="w-full bg-slate-950/40 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-slate-200"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Contoh Teks</label>
+                            <input 
+                              type="text" 
+                              value={presetText} 
+                              onChange={(e) => setPresetText(e.target.value)}
+                              placeholder="Teks preview"
+                              className="w-full bg-slate-950/40 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-slate-200"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Font Family</label>
+                            <select 
+                              value={presetFont} 
+                              onChange={(e) => {
+                                setPresetFont(e.target.value);
+                                setPresetEffects((prev: any) => ({ ...prev, fontFamily: e.target.value }));
+                              }}
+                              className="w-full bg-slate-950/40 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-slate-300"
+                            >
+                              {['Orbitron', 'Bebas Neue', 'Pacifico', 'Cinzel', 'Press Start 2P', 'Anton', 'Permanent Marker', 'Montserrat', 'Inter'].map(f => (
+                                <option key={f} value={f} className="bg-slate-950 text-slate-200">{f}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Effects Section */}
+                        <div className="bg-white/5 rounded-3xl p-6 border border-white/5 space-y-6">
+                          <h4 className="text-sm font-black text-indigo-400 uppercase tracking-wider border-b border-white/5 pb-3">Efek Teks</h4>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            {/* Color & Fill Type */}
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-wider block">Warna Utama (Text Color)</label>
+                                <div className="flex gap-3 items-center">
+                                  <input 
+                                    type="color" 
+                                    value={presetColor} 
+                                    onChange={(e) => setPresetColor(e.target.value)} 
+                                    className="w-12 h-12 bg-transparent border-none cursor-pointer rounded-xl overflow-hidden" 
+                                  />
+                                  <input 
+                                    type="text" 
+                                    value={presetColor} 
+                                    onChange={(e) => setPresetColor(e.target.value)} 
+                                    className="flex-1 bg-slate-950/20 border border-white/10 rounded-xl px-4 py-2 text-xs focus:outline-none" 
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="space-y-2">
+                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-wider block">Tipe Isian (Fill Type)</label>
+                                <div className="flex gap-4">
+                                  {['solid', 'gradient'].map(type => (
+                                    <label key={type} className="flex items-center gap-2 text-xs font-bold text-slate-300 cursor-pointer capitalize">
+                                      <input 
+                                        type="radio" 
+                                        name="fillType" 
+                                        value={type}
+                                        checked={presetEffects.fillType === type}
+                                        onChange={(e) => setPresetEffects((prev: any) => ({ ...prev, fillType: e.target.value }))}
+                                        className="accent-indigo-500"
+                                      />
+                                      {type}
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Letter Spacing & Text Transform */}
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <div className="flex justify-between text-[9px] font-black text-slate-500 uppercase">
+                                  <span>Letter Spacing</span>
+                                  <span className="text-indigo-400">{presetEffects.letterSpacing || 0}px</span>
+                                </div>
+                                <input 
+                                  type="range" 
+                                  min="0" 
+                                  max="20" 
+                                  value={presetEffects.letterSpacing || 0} 
+                                  onChange={(e) => setPresetEffects((prev: any) => ({ ...prev, letterSpacing: parseInt(e.target.value) }))}
+                                  className="w-full accent-indigo-500" 
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-wider block">Text Transform</label>
+                                <select 
+                                  value={presetEffects.textTransform || 'none'}
+                                  onChange={(e) => setPresetEffects((prev: any) => ({ ...prev, textTransform: e.target.value }))}
+                                  className="w-full bg-slate-950/40 border border-white/10 rounded-xl px-4 py-2 text-xs focus:outline-none"
+                                >
+                                  <option value="none" className="bg-slate-950">Normal</option>
+                                  <option value="uppercase" className="bg-slate-950">UPPERCASE</option>
+                                  <option value="lowercase" className="bg-slate-950">lowercase</option>
+                                  <option value="capitalize" className="bg-slate-950">Capitalize</option>
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Gradient Stops (If Gradient Selected) */}
+                          {presetEffects.fillType === 'gradient' && (
+                            <div className="space-y-4 p-4 bg-slate-950/30 rounded-2xl border border-white/5">
+                              <div className="flex justify-between items-center">
+                                <label className="text-[9px] font-black text-indigo-400 uppercase tracking-wider">Pengaturan Gradient</label>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[9px] text-slate-500 uppercase">Angle:</span>
+                                  <span className="text-xs text-indigo-400 font-bold">{presetEffects.gradient?.angle || 45}°</span>
+                                </div>
+                              </div>
+                              <input 
+                                type="range" 
+                                min="0" 
+                                max="360" 
+                                value={presetEffects.gradient?.angle || 45}
+                                onChange={(e) => setPresetEffects((prev: any) => ({
+                                  ...prev,
+                                  gradient: { ...prev.gradient, angle: parseInt(e.target.value) }
+                                }))}
+                                className="w-full accent-indigo-500" 
+                              />
+                              
+                              <div className="space-y-2">
+                                <span className="text-[9px] font-black text-slate-500 uppercase block">Stops (Maks 3)</span>
+                                {[0, 1, 2].map(index => {
+                                  const stop = presetEffects.gradient?.stops?.[index] || { offset: index * 50, color: index === 0 ? '#00f2fe' : index === 1 ? '#a855f7' : '#f43f5e' };
+                                  return (
+                                    <div key={index} className="flex gap-4 items-center">
+                                      <span className="text-[10px] text-slate-500 font-bold">Stop {index + 1}</span>
+                                      <input 
+                                        type="color" 
+                                        value={stop.color} 
+                                        onChange={(e) => {
+                                          const newStops = [...(presetEffects.gradient?.stops || [])];
+                                          newStops[index] = { ...stop, color: e.target.value };
+                                          setPresetEffects((prev: any) => ({
+                                            ...prev,
+                                            gradient: { ...prev.gradient, stops: newStops }
+                                          }));
+                                        }}
+                                        className="w-8 h-8 bg-transparent border-none cursor-pointer rounded-lg overflow-hidden" 
+                                      />
+                                      <div className="flex-1 flex gap-2 items-center">
+                                        <input 
+                                          type="range" 
+                                          min="0" 
+                                          max="100" 
+                                          value={stop.offset} 
+                                          onChange={(e) => {
+                                            const newStops = [...(presetEffects.gradient?.stops || [])];
+                                            newStops[index] = { ...stop, offset: parseInt(e.target.value) };
+                                            setPresetEffects((prev: any) => ({
+                                              ...prev,
+                                              gradient: { ...prev.gradient, stops: newStops }
+                                            }));
+                                          }}
+                                          className="flex-1 accent-indigo-500" 
+                                        />
+                                        <span className="text-[10px] font-bold text-slate-400 w-10 text-right">{stop.offset}%</span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Stroke settings */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 border-t border-white/5 pt-4">
+                            <div className="space-y-2">
+                              <label className="text-[9px] font-black text-slate-500 uppercase block">Warna Stroke Outline</label>
+                              <div className="flex gap-3 items-center">
+                                <input 
+                                  type="color" 
+                                  value={presetEffects.stroke?.color || '#000000'} 
+                                  onChange={(e) => setPresetEffects((prev: any) => ({
+                                    ...prev,
+                                    stroke: { ...prev.stroke, color: e.target.value }
+                                  }))} 
+                                  className="w-10 h-10 bg-transparent border-none cursor-pointer rounded-lg overflow-hidden" 
+                                />
+                                <input 
+                                  type="text" 
+                                  value={presetEffects.stroke?.color || '#000000'}
+                                  onChange={(e) => setPresetEffects((prev: any) => ({
+                                    ...prev,
+                                    stroke: { ...prev.stroke, color: e.target.value }
+                                  }))}
+                                  className="flex-1 bg-slate-950/20 border border-white/10 rounded-xl px-4 py-2 text-xs focus:outline-none"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-[9px] font-black text-slate-500 uppercase">
+                                <span>Ketebalan Stroke</span>
+                                <span className="text-indigo-400">{presetEffects.stroke?.width || 0}px</span>
+                              </div>
+                              <input 
+                                type="range" 
+                                min="0" 
+                                max="10" 
+                                step="0.5"
+                                value={presetEffects.stroke?.width || 0}
+                                onChange={(e) => setPresetEffects((prev: any) => ({
+                                  ...prev,
+                                  stroke: { ...prev.stroke, width: parseFloat(e.target.value) }
+                                }))}
+                                className="w-full accent-indigo-500" 
+                              />
+                            </div>
+                          </div>
+
+                          {/* Shadows manager (simple edit of first shadow, or display all) */}
+                          <div className="border-t border-white/5 pt-4 space-y-4">
+                            <span className="text-[9px] font-black text-slate-500 uppercase block">Text Shadows (Bayangan Teks)</span>
+                            {[0, 1].map((sIndex) => {
+                              const shadow = presetEffects.shadows?.[sIndex] || { x: 0, y: 0, blur: 0, color: '#000000' };
+                              return (
+                                <div key={sIndex} className="p-4 bg-slate-950/10 rounded-2xl border border-white/5 space-y-3">
+                                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Shadow #{sIndex + 1}</span>
+                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 items-center">
+                                    <div className="space-y-1">
+                                      <span className="text-[8px] text-slate-500 uppercase block">X Offset ({shadow.x}px)</span>
+                                      <input 
+                                        type="range" min="-30" max="30" value={shadow.x}
+                                        onChange={(e) => {
+                                          const newShadows = [...(presetEffects.shadows || [])];
+                                          newShadows[sIndex] = { ...shadow, x: parseInt(e.target.value) };
+                                          setPresetEffects((prev: any) => ({ ...prev, shadows: newShadows }));
+                                        }}
+                                        className="w-full accent-indigo-500"
+                                      />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <span className="text-[8px] text-slate-500 uppercase block">Y Offset ({shadow.y}px)</span>
+                                      <input 
+                                        type="range" min="-30" max="30" value={shadow.y}
+                                        onChange={(e) => {
+                                          const newShadows = [...(presetEffects.shadows || [])];
+                                          newShadows[sIndex] = { ...shadow, y: parseInt(e.target.value) };
+                                          setPresetEffects((prev: any) => ({ ...prev, shadows: newShadows }));
+                                        }}
+                                        className="w-full accent-indigo-500"
+                                      />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <span className="text-[8px] text-slate-500 uppercase block">Blur ({shadow.blur}px)</span>
+                                      <input 
+                                        type="range" min="0" max="50" value={shadow.blur}
+                                        onChange={(e) => {
+                                          const newShadows = [...(presetEffects.shadows || [])];
+                                          newShadows[sIndex] = { ...shadow, blur: parseInt(e.target.value) };
+                                          setPresetEffects((prev: any) => ({ ...prev, shadows: newShadows }));
+                                        }}
+                                        className="w-full accent-indigo-500"
+                                      />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <span className="text-[8px] text-slate-500 uppercase block">Warna</span>
+                                      <input 
+                                        type="color" value={shadow.color}
+                                        onChange={(e) => {
+                                          const newShadows = [...(presetEffects.shadows || [])];
+                                          newShadows[sIndex] = { ...shadow, color: e.target.value };
+                                          setPresetEffects((prev: any) => ({ ...prev, shadows: newShadows }));
+                                        }}
+                                        className="w-full h-8 bg-transparent border-none cursor-pointer rounded-lg overflow-hidden"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={presetSaving}
+                          className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black py-4 px-10 rounded-2xl transition-all shadow-xl shadow-indigo-600/30 active:scale-95 text-sm"
+                        >
+                          {presetSaving ? 'Sedang Menyimpan...' : '💾 Simpan Preset Teks'}
+                        </button>
+                      </div>
+
+                      {/* Right: Live Preview Box */}
+                      <div className="lg:col-span-5 space-y-6 flex flex-col justify-between">
+                        <div className="space-y-4">
+                          <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block">Live Render Preview</label>
+                          <div className="aspect-square bg-slate-950/50 rounded-[3rem] border border-white/10 flex items-center justify-center p-8 bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-repeat shadow-inner min-h-[300px]">
+                            <span 
+                              style={getPresetStyle(presetColor, {
+                                ...presetEffects,
+                                fontFamily: presetFont
+                              })} 
+                              className="text-3xl md:text-5xl font-black text-center break-words max-w-full drop-shadow-2xl transition-all duration-300"
+                            >
+                              {presetText || 'PREVIEW'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-950/20 border border-white/5 rounded-3xl p-5 text-xs text-slate-400 space-y-3 leading-relaxed">
+                          <p className="font-bold text-slate-300">💡 Panduan Live Preview:</p>
+                          <p>• Rancang gaya teks dengan mengubah font, warna, stroke outline, bayangan, atau efek gradient.</p>
+                          <p>• Gunakan checkerboard di belakang preview untuk memastikan efek transparansi/shadow terlihat pas.</p>
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                ) : (
+                  <>
+                    {presetLoading ? (
+                      <div className="flex flex-col items-center justify-center p-32 bg-white/5 rounded-[3rem] border border-white/10">
+                        <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-4"></div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Membaca Database Preset...</p>
+                      </div>
+                    ) : presets.length === 0 ? (
+                      <div className="bg-white/5 p-24 rounded-[3rem] border border-dashed border-white/10 text-center text-slate-600">
+                        <p className="text-lg font-bold">Preset kosong nih, Aa. Klik tombol "Buat Preset Baru" untuk memulai! ❤️</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {presets.map((preset) => (
+                          <div key={preset.id} className="group bg-white/5 rounded-[2.5rem] border border-white/5 overflow-hidden hover:border-indigo-500/50 hover:bg-white/10 transition-all duration-500 shadow-xl flex flex-col justify-between">
+                            <div className="aspect-[2/1] bg-slate-950/30 flex items-center justify-center p-10 relative overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-repeat border-b border-white/5">
+                              <span 
+                                style={getPresetStyle(preset.color, preset.effects)}
+                                className="text-3xl font-black text-center break-words max-w-full group-hover:scale-105 transition-transform duration-500"
+                              >
+                                {preset.text}
+                              </span>
+                            </div>
+                            <div className="p-6 space-y-4">
+                              <div>
+                                <h3 className="font-black text-base text-slate-200">{preset.name}</h3>
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">
+                                  ID: <code className="text-indigo-400 bg-white/5 px-2 py-0.5 rounded border border-white/5">{preset.id}</code>
+                                </p>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4 text-xs font-medium text-slate-400">
+                                <div>Font: <span className="text-slate-300 font-bold">{preset.fontFamily}</span></div>
+                                <div>Fill: <span className="text-slate-300 font-bold capitalize">{preset.effects?.fillType || 'solid'}</span></div>
+                              </div>
+                              <div className="flex gap-3 pt-2">
+                                <button 
+                                  onClick={() => startEditPreset(preset)}
+                                  className="flex-1 bg-white/5 hover:bg-indigo-600 hover:text-white border border-white/5 hover:border-transparent text-slate-300 font-black py-3 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-2"
+                                >
+                                  ✏️ Edit Preset
+                                </button>
+                                <button 
+                                  onClick={() => handleDeletePreset(preset.id)}
+                                  className="bg-rose-500/10 hover:bg-rose-600 border border-rose-500/10 hover:border-transparent text-rose-400 hover:text-white p-3 rounded-xl transition-all"
+                                  title="Hapus Preset"
+                                >
+                                  🗑️
+                                </button>
+                                <button 
+                                  onClick={() => {
+                                    const url = `${window.location.origin}/api/textpreset`;
+                                    navigator.clipboard.writeText(url);
+                                    alert('Link API Preset disalin! 📋');
+                                  }}
+                                  className="bg-white/5 hover:bg-emerald-600 border border-white/5 hover:border-transparent text-slate-300 hover:text-white p-3 rounded-xl transition-all"
+                                  title="Salin URL API"
+                                >
+                                  📋
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
 
