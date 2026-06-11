@@ -76,6 +76,7 @@ export default function UnifiedDashboard() {
   // Preset Form fields
   const [presetId, setPresetId] = useState('');
   const [presetName, setPresetName] = useState('');
+  const [presetStyle, setPresetStyle] = useState('neon'); // Added style!
   const [presetText, setPresetText] = useState('TEXT PRESET');
   const [presetFont, setPresetFont] = useState('Orbitron');
   const [presetColor, setPresetColor] = useState('#ffffff');
@@ -291,6 +292,7 @@ export default function UnifiedDashboard() {
       const payload = {
         id: presetId,
         name: presetName,
+        style: presetStyle, // Added style!
         text: presetText || 'TEXT',
         fontFamily: presetFont,
         color: presetColor,
@@ -340,6 +342,7 @@ export default function UnifiedDashboard() {
     setEditingPreset(preset);
     setPresetId(preset.id);
     setPresetName(preset.name);
+    setPresetStyle(preset.style || 'neon'); // Added style!
     setPresetText(preset.text);
     setPresetFont(preset.fontFamily || 'Orbitron');
     setPresetColor(preset.color || '#ffffff');
@@ -360,6 +363,7 @@ export default function UnifiedDashboard() {
     setEditingPreset(null);
     setPresetId('');
     setPresetName('');
+    setPresetStyle('neon'); // Added style!
     setPresetText('TEXT PRESET');
     setPresetFont('Orbitron');
     setPresetColor('#ffffff');
@@ -840,7 +844,7 @@ export default function UnifiedDashboard() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Contoh Teks</label>
                             <input 
@@ -863,6 +867,36 @@ export default function UnifiedDashboard() {
                             >
                               {['Orbitron', 'Bebas Neue', 'Pacifico', 'Cinzel', 'Press Start 2P', 'Anton', 'Permanent Marker', 'Montserrat', 'Inter'].map(f => (
                                 <option key={f} value={f} className="bg-slate-950 text-slate-200">{f}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Gaya Canvas (Style)</label>
+                            <select 
+                              value={presetStyle} 
+                              onChange={(e) => setPresetStyle(e.target.value)}
+                              className="w-full bg-slate-950/40 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-slate-300"
+                            >
+                              {[
+                                { id: 'neon', name: 'Neon Glow' },
+                                { id: 'double-neon', name: 'Double Neon' },
+                                { id: '3d', name: 'Classic 3D' },
+                                { id: 'chrome', name: 'Chrome Luxe' },
+                                { id: 'hologram', name: 'Hologram-X' },
+                                { id: 'curved', name: 'Arc Bend' },
+                                { id: 'glitch', name: 'Glitch Hack' },
+                                { id: 'glassmorphism', name: 'Glassmorphism' },
+                                { id: 'futuristic', name: 'Futuristic' },
+                                { id: 'claymorphism', name: 'Claymorphism' },
+                                { id: 'funny', name: 'Funny' },
+                                { id: 'brutalist', name: 'Brutalist' },
+                                { id: 'sunset', name: 'Sunset Dream' },
+                                { id: 'cosmic', name: 'Cosmic Eclipse' },
+                                { id: 'neo-mint', name: 'Neo-Mint' },
+                                { id: 'terracotta', name: 'Terracotta' },
+                                { id: 'nordic', name: 'Nordic Luxury' }
+                              ].map(s => (
+                                <option key={s.id} value={s.id} className="bg-slate-950 text-slate-200">{s.name}</option>
                               ))}
                             </select>
                           </div>

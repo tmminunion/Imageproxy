@@ -9,6 +9,7 @@ export async function GET() {
     const formattedRows = rows.map((row: any) => ({
       id: row.id,
       name: row.name,
+      style: row.style || 'neon',
       text: row.text,
       fontFamily: row.fontFamily,
       color: row.color,
@@ -31,20 +32,22 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, name, text, fontFamily, color, effects } = body;
+    const { id, name, style, text, fontFamily, color, effects } = body;
 
     if (!id || !name || !text || !fontFamily || !color || !effects) {
       return NextResponse.json({ error: 'Semua parameter (id, name, text, fontFamily, color, effects) wajib diisi ya, Aa.' }, { status: 400 });
     }
 
-    const effectsJson = typeof effects === 'object' ? JSON.stringify(effects) : effects;
+    const finalStyle = style || 'neon';
+    const fillType = effects.fillType || 'solid';
+    const effectsJson = typeof effects === 'object' ? JSON.stringify({ ...effects, fillType }) : effects;
 
     await db.query(`
-      INSERT INTO text_presets (id, name, text, fontFamily, color, effects)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO text_presets (id, name, style, text, fontFamily, color, effects)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE 
-      name = VALUES(name), text = VALUES(text), fontFamily = VALUES(fontFamily), color = VALUES(color), effects = VALUES(effects);
-    `, [id, name, text, fontFamily, color, effectsJson]);
+      name = VALUES(name), style = VALUES(style), text = VALUES(text), fontFamily = VALUES(fontFamily), color = VALUES(color), effects = VALUES(effects);
+    `, [id, name, finalStyle, text, fontFamily, color, effectsJson]);
 
     return NextResponse.json({ success: true, message: 'Preset berhasil disimpan! ❤️' });
   } catch (error: any) {
