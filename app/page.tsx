@@ -564,14 +564,27 @@ export default function UnifiedDashboard() {
     }
   };
 
-  const handleGeneratePresetAi = async () => {
+  const handleGeneratePresetAi = async (isEditMode: boolean = false) => {
     if (!presetPrompt.trim()) return;
     setAiPresetLoading(true);
     try {
+      const payload: any = { type: 'preset', prompt: presetPrompt };
+      
+      if (isEditMode) {
+        payload.currentState = {
+          name: presetName,
+          style: presetStyle,
+          text: presetText,
+          fontFamily: presetFont,
+          color: presetColor,
+          effects: presetEffects
+        };
+      }
+
       const res = await fetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'preset', prompt: presetPrompt })
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (data.success && data.result) {
@@ -592,9 +605,9 @@ export default function UnifiedDashboard() {
             textTransform: fx.textTransform || 'uppercase'
           });
         }
-        alert('Desain preset siber berhasil dibuat oleh Gemini! ✨');
+        alert(isEditMode ? 'Preset siber berhasil dimodifikasi oleh Gemini! ✏️' : 'Desain preset siber berhasil dibuat oleh Gemini! ✨');
       } else {
-        alert(data.error || 'Gagal generate preset.');
+        alert(data.error || 'Gagal memproses preset.');
       }
     } catch (err: any) {
       alert('Error: ' + err.message);
@@ -1294,16 +1307,24 @@ export default function UnifiedDashboard() {
                              />
                              <button
                                type="button"
-                               onClick={handleGeneratePresetAi}
+                               onClick={() => handleGeneratePresetAi(false)}
                                disabled={aiPresetLoading || !presetPrompt.trim()}
-                               className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs px-6 py-3 rounded-2xl transition-all shadow-lg active:scale-95 disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+                               className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs px-5 py-3 rounded-2xl transition-all shadow-lg active:scale-95 disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
                              >
                                {aiPresetLoading ? (
                                  <>
                                    <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
                                    Mendesain...
                                  </>
-                               ) : '🪄 Generate Preset'}
+                               ) : '🪄 Buat Baru'}
+                             </button>
+                             <button
+                               type="button"
+                               onClick={() => handleGeneratePresetAi(true)}
+                               disabled={aiPresetLoading || !presetPrompt.trim()}
+                               className="bg-white/5 hover:bg-white/10 text-indigo-400 border border-white/10 font-black text-xs px-5 py-3 rounded-2xl transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+                             >
+                               ✏️ Edit via AI
                              </button>
                            </div>
                         </div>

@@ -3,7 +3,7 @@ import { GoogleGenAI } from '@google/genai';
 
 export async function POST(req: NextRequest) {
   try {
-    const { type, prompt } = await req.json();
+    const { type, prompt, currentState } = await req.json();
 
     if (!type || !prompt) {
       return NextResponse.json({ error: 'Parameter "type" (svg atau preset) dan "prompt" wajib ada, Aa.' }, { status: 400 });
@@ -35,12 +35,11 @@ Requirements:
       });
 
       let svgCode = response.text || '';
-      // Bersihkan jika model tetap membungkusnya dengan blok kode markdown
       svgCode = svgCode.replace(/```(xml|svg)?/g, '').trim();
 
       return NextResponse.json({ success: true, result: svgCode });
     } else if (type === 'preset') {
-      const systemInstruction = `You are a UI designer expert. Generate a beautiful typography design preset based on the user's prompt.
+      let systemInstruction = `You are a UI designer expert. Generate a beautiful typography design preset based on the user's prompt.
 You must respond ONLY with a valid JSON object matching the following structure.
 DO NOT wrap the response in markdown blocks. Output raw JSON.
 
@@ -73,9 +72,51 @@ JSON Structure:
   }
 }`;
 
+      let userContent = prompt;
+
+      // Jika ada currentState, kita buat mode edit / modifikasi
+      if (currentState) {
+        systemInstruction = `You are a UI designer expert. The user wants to EDIT or MODIFY an existing typography design preset.
+The current state of the preset is provided in JSON format below.
+Analyze the user's modification request (prompt) and apply it to the current state.
+Return the updated preset JSON matching the same structure. 
+Only change the fields requested by the user, and keep the rest intact.
+DO NOT wrap the response in markdown blocks. Output raw JSON.
+
+JSON Structure:
+{
+  "name": "A descriptive name for the preset",
+  "style": "One of these style IDs: neon, double-neon, 3d, chrome, hologram, curved, glitch, glassmorphism, claymorphism, funny, brutalist, sunset, cosmic, neo-mint, terracotta, nordic",
+  "text": "The text content",
+  "fontFamily": "One of these fonts: Orbitron, Bebas Neue, Pacifico, Cinzel, Press Start 2P, Anton, Permanent Marker, Montserrat, Inter",
+  "color": "Hex color code",
+  "effects": {
+    "fillType": "solid" or "gradient",
+    "gradient": {
+      "type": "linear",
+      "angle": 45,
+      "stops": [
+        { "offset": 0, "color": "Hex color" },
+        { "offset": 100, "color": "Hex color" }
+      ]
+    },
+    "stroke": {
+      "color": "Hex color",
+      "width": 1.5
+    },
+    "shadows": [
+      { "x": 1, "y": 1, "blur": 5, "color": "Hex color or rgba" }
+    ],
+    "letterSpacing": 2,
+    "textTransform": "uppercase"
+  }
+}`;
+        userContent = `Current Preset State:\n${JSON.stringify(currentState, null, 2)}\n\nModification Request:\n${prompt}`;
+      }
+
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: prompt,
+        contents: userContent,
         config: {
           systemInstruction,
           temperature: 0.7,
