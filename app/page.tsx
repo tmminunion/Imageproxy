@@ -151,6 +151,130 @@ export default function UnifiedDashboard() {
     if (activeTab === 'text-presets') fetchPresets();
   }, [activeTab]);
 
+  useEffect(() => {
+    // Auto sync presetEffects to match presetStyle & presetColor for perfect database parity
+    const color = presetColor || '#00f2fe';
+    switch (presetStyle) {
+      case 'double-neon':
+        setPresetEffects({
+          fillType: 'solid',
+          stroke: { color: color, width: 1 },
+          shadows: [
+            { x: -3, y: -3, blur: 15, color: '#00f2fe' },
+            { x: 3, y: 3, blur: 15, color: '#f35588' },
+            { x: 0, y: 0, blur: 5, color: color }
+          ],
+          letterSpacing: 2,
+          textTransform: 'uppercase'
+        });
+        break;
+      case 'neon':
+        setPresetEffects({
+          fillType: 'solid',
+          stroke: { color: 'transparent', width: 0 },
+          shadows: [
+            { x: 0, y: 0, blur: 5, color: '#ffffff' },
+            { x: 0, y: 0, blur: 10, color: '#ffffff' },
+            { x: 0, y: 0, blur: 20, color: color },
+            { x: 0, y: 0, blur: 40, color: color }
+          ],
+          letterSpacing: 2,
+          textTransform: 'uppercase'
+        });
+        break;
+      case '3d':
+        setPresetEffects({
+          fillType: 'solid',
+          stroke: { color: '#000000', width: 1 },
+          shadows: [
+            { x: 1.5, y: 1.5, blur: 0, color: color },
+            { x: 3, y: 3, blur: 0, color: color },
+            { x: 4.5, y: 4.5, blur: 0, color: color },
+            { x: 6, y: 6, blur: 0, color: color },
+            { x: 7.5, y: 7.5, blur: 0, color: '#000000' }
+          ],
+          letterSpacing: 2,
+          textTransform: 'uppercase'
+        });
+        break;
+      case 'chrome':
+        setPresetEffects({
+          fillType: 'gradient',
+          gradient: {
+            type: 'linear',
+            angle: 90,
+            stops: [
+              { offset: 0, color: '#dbe2ea' },
+              { offset: 50, color: '#879ab6' },
+              { offset: 51, color: '#46566d' },
+              { offset: 100, color: '#1f2735' }
+            ]
+          },
+          stroke: { color: '#ffffff', width: 1 },
+          shadows: [
+            { x: 0, y: 2, blur: 2, color: 'rgba(0,0,0,0.8)' }
+          ],
+          letterSpacing: 2,
+          textTransform: 'uppercase'
+        });
+        break;
+      case 'hologram':
+        setPresetEffects({
+          fillType: 'gradient',
+          gradient: {
+            type: 'linear',
+            angle: 90,
+            stops: [
+              { offset: 0, color: 'rgba(0,255,255,0.9)' },
+              { offset: 50, color: 'rgba(255,0,255,0.8)' },
+              { offset: 100, color: 'rgba(0,255,255,0.9)' }
+            ]
+          },
+          stroke: { color: 'rgba(255,255,255,0.8)', width: 1 },
+          shadows: [
+            { x: 0, y: 0, blur: 5, color: '#00ffff' }
+          ],
+          letterSpacing: 2,
+          textTransform: 'uppercase'
+        });
+        break;
+      case 'curved':
+        setPresetEffects({
+          fillType: 'solid',
+          stroke: { color: '#000000', width: 1 },
+          shadows: [
+            { x: 0, y: 0, blur: 8, color: color }
+          ],
+          letterSpacing: 2,
+          textTransform: 'uppercase'
+        });
+        break;
+      case 'glitch':
+        setPresetEffects({
+          fillType: 'solid',
+          stroke: { color: 'transparent', width: 0 },
+          shadows: [
+            { x: 2, y: 0, blur: 0, color: '#00ffff' },
+            { x: -2, y: 0, blur: 0, color: '#ff00ff' }
+          ],
+          letterSpacing: 2,
+          textTransform: 'uppercase'
+        });
+        break;
+      default:
+        setPresetEffects({
+          fillType: 'solid',
+          stroke: { color: 'transparent', width: 0 },
+          shadows: [
+            { x: 0, y: 0, blur: 8, color: color }
+          ],
+          letterSpacing: 2,
+          textTransform: 'uppercase'
+        });
+        break;
+    }
+  }, [presetStyle, presetColor]);
+
   // --- SVG LOGIC ---
   const fetchSvgs = async () => {
     try {
@@ -408,48 +532,139 @@ export default function UnifiedDashboard() {
     setShowPresetForm(true);
   };
 
-  const getPresetStyle = (color: string, effects: any) => {
-    if (!effects) return {};
-    const style: React.CSSProperties = {
-      color: color,
-      fontFamily: effects.fontFamily || 'Orbitron',
+  const getPresetStyle = (color: string, styleId: string, fontFamily: string) => {
+    const baseStyle: React.CSSProperties = {
+      fontFamily: fontFamily || 'Orbitron',
     };
 
-    if (effects.letterSpacing !== undefined) {
-      style.letterSpacing = `${effects.letterSpacing}px`;
+    switch (styleId) {
+      case 'double-neon':
+        return {
+          ...baseStyle,
+          color: '#ffffff',
+          textShadow: `-3px -3px 15px #00f2fe, 3px 3px 15px #f35588, 0 0 5px ${color}`,
+          WebkitTextStroke: `1px ${color}`,
+        };
+      case 'neon':
+        return {
+          ...baseStyle,
+          color: '#ffffff',
+          textShadow: `0 0 5px #fff, 0 0 10px #fff, 0 0 20px ${color}, 0 0 40px ${color}`,
+        };
+      case '3d':
+        return {
+          ...baseStyle,
+          color: '#ffffff',
+          textShadow: `1.5px 1.5px 0 ${color}, 3px 3px 0 ${color}, 4.5px 4.5px 0 ${color}, 6px 6px 0 ${color}, 7.5px 7.5px 0 #000`,
+          WebkitTextStroke: '1px #000',
+        };
+      case 'chrome':
+        return {
+          ...baseStyle,
+          background: 'linear-gradient(to bottom, #dbe2ea 0%, #879ab6 50%, #46566d 51%, #1f2735 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          WebkitTextStroke: '1px #fff',
+          filter: 'drop-shadow(0px 2px 2px rgba(0,0,0,0.8))',
+        };
+      case 'hologram':
+        return {
+          ...baseStyle,
+          background: 'linear-gradient(to bottom, rgba(0,255,255,0.9), rgba(255,0,255,0.8), rgba(0,255,255,0.9))',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          WebkitTextStroke: '1px rgba(255,255,255,0.8)',
+          filter: 'drop-shadow(0px 0px 5px #0ff)',
+        };
+      case 'curved':
+        return {
+          ...baseStyle,
+          color: '#ffffff',
+          textShadow: `0 0 8px ${color}`,
+          WebkitTextStroke: '1px #000',
+          borderBottom: `2px dashed ${color}`,
+          borderRadius: '50% 50% 0 0',
+        };
+      case 'glitch':
+        return {
+          ...baseStyle,
+          color: '#ffffff',
+          textShadow: '2px 0 #0ff, -2px 0 #f0f',
+        };
+      case 'glassmorphism':
+        return {
+          ...baseStyle,
+          color: 'rgba(255, 255, 255, 0.8)',
+          background: 'rgba(255, 255, 255, 0.1)',
+          backdropFilter: 'blur(10px)',
+          padding: '4px 8px',
+          borderRadius: '8px',
+        };
+      case 'claymorphism':
+        return {
+          ...baseStyle,
+          color: '#ffffff',
+          backgroundColor: color,
+          padding: '4px 12px',
+          borderRadius: '16px',
+          boxShadow: 'inset -2px -2px 6px rgba(0,0,0,0.1), inset 2px 2px 6px rgba(255,255,255,0.4)',
+        };
+      case 'funny':
+        return {
+          ...baseStyle,
+          color: color,
+          transform: 'rotate(-5deg)',
+          fontWeight: 'bold',
+          textShadow: '2px 2px 0 #fff',
+        };
+      case 'brutalist':
+        return {
+          ...baseStyle,
+          color: '#ffffff',
+          backgroundColor: '#000000',
+          padding: '4px 8px',
+          border: '2px solid #000000',
+        };
+      case 'sunset':
+        return {
+          ...baseStyle,
+          color: '#fff',
+          background: 'linear-gradient(to bottom, #ff7e5f, #feb47b)',
+          padding: '4px 8px',
+          borderRadius: '4px',
+        };
+      case 'cosmic':
+        return {
+          ...baseStyle,
+          color: '#ffffff',
+          textShadow: '0 0 5px #fff, 0 0 10px #00f2fe',
+        };
+      case 'neo-mint':
+        return {
+          ...baseStyle,
+          color: color,
+          letterSpacing: '0.1em',
+        };
+      case 'terracotta':
+        return {
+          ...baseStyle,
+          color: color,
+          textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
+        };
+      case 'nordic':
+        return {
+          ...baseStyle,
+          color: color,
+          textShadow: '0 1px 0 rgba(0,0,0,0.1)',
+        };
+      default:
+        return {
+          ...baseStyle,
+          color: '#ffffff',
+          textShadow: `0 0 8px ${color}`,
+          borderBottom: `2px solid ${color}`,
+        };
     }
-    if (effects.textTransform) {
-      style.textTransform = effects.textTransform;
-    }
-
-    // Stroke
-    if (effects.stroke && effects.stroke.width > 0) {
-      style.WebkitTextStroke = `${effects.stroke.width}px ${effects.stroke.color}`;
-    } else {
-      style.WebkitTextStroke = 'unset';
-    }
-
-    // Gradient or Solid Fill
-    if (effects.fillType === 'gradient' && effects.gradient && effects.gradient.stops) {
-      const stops = effects.gradient.stops || [];
-      const stopString = stops.map((s: any) => `${s.color} ${s.offset}%`).join(', ');
-      style.backgroundImage = `linear-gradient(${effects.gradient.angle || 0}deg, ${stopString})`;
-      style.WebkitBackgroundClip = 'text';
-      style.WebkitTextFillColor = 'transparent';
-    } else {
-      style.backgroundImage = 'none';
-      style.WebkitBackgroundClip = 'unset';
-      style.WebkitTextFillColor = 'unset';
-    }
-
-    // Shadows
-    if (effects.shadows && Array.isArray(effects.shadows) && effects.shadows.length > 0) {
-      style.textShadow = textShadowValue(effects.shadows);
-    } else {
-      style.textShadow = 'none';
-    }
-
-    return style;
   };
 
   const textShadowValue = (shadows: any[]) => {
@@ -1015,6 +1230,16 @@ export default function UnifiedDashboard() {
                           </div>
                         </div>
 
+                        {/* Notice Box about Frontend limitations */}
+                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-3xl p-5 text-xs text-amber-300 leading-relaxed space-y-1">
+                          <p className="font-bold text-amber-200 flex items-center gap-2">⚠️ Info Penting untuk aa Baim:</p>
+                          <p>
+                            Kanvas utama di aplikasi Frontend menggunakan gaya rendering bawaan yang teroptimasi secara keras (hardcoded). 
+                            Mengubah properti detail di bagian "Efek Teks" di bawah ini tetap akan disinkronkan ke database, namun tampilan di kanvas editor 
+                            akan diprioritaskan menggunakan template otomatis dari <strong>Gaya Canvas (Style)</strong> yang dipilih di atas agar kinerjanya cepat.
+                          </p>
+                        </div>
+
                         {/* Effects Section */}
                         <div className="bg-white/5 rounded-3xl p-6 border border-white/5 space-y-6">
                           <h4 className="text-sm font-black text-indigo-400 uppercase tracking-wider border-b border-white/5 pb-3">Efek Teks</h4>
@@ -1285,10 +1510,7 @@ export default function UnifiedDashboard() {
                           <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block">Live Render Preview</label>
                           <div className="aspect-square bg-slate-950/50 rounded-[3rem] border border-white/10 flex items-center justify-center p-8 bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-repeat shadow-inner min-h-[300px]">
                             <span 
-                              style={getPresetStyle(presetColor, {
-                                ...presetEffects,
-                                fontFamily: presetFont
-                              })} 
+                              style={getPresetStyle(presetColor, presetStyle, presetFont)} 
                               className="text-3xl md:text-5xl font-black text-center break-words max-w-full drop-shadow-2xl transition-all duration-300"
                             >
                               {presetText || 'PREVIEW'}
@@ -1321,7 +1543,7 @@ export default function UnifiedDashboard() {
                           <div key={preset.id} className="group bg-white/5 rounded-[2.5rem] border border-white/5 overflow-hidden hover:border-indigo-500/50 hover:bg-white/10 transition-all duration-500 shadow-xl flex flex-col justify-between">
                             <div className="aspect-[2/1] bg-slate-950/30 flex items-center justify-center p-10 relative overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-repeat border-b border-white/5">
                               <span 
-                                style={getPresetStyle(preset.color, preset.effects)}
+                                style={getPresetStyle(preset.color, preset.style, preset.fontFamily)}
                                 className="text-3xl font-black text-center break-words max-w-full group-hover:scale-105 transition-transform duration-500"
                               >
                                 {preset.text}
